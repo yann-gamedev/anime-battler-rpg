@@ -3,6 +3,7 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local Traits = require(Shared.Config.Traits)
 local UIController = require(script.Parent.Parent.Controllers.UIController)
+local Controls = require(script.Parent.Components.Controls)
 local Modal = require(script.Parent.Components.Modal)
 local Page = require(script.Parent.ProgressPage)
 local ProgressRemote = require(script.Parent.ProgressRemote)
@@ -60,7 +61,10 @@ function TraitView.refresh(
 		if info and unit and unit.trait == info.traitId and unit.locked == info.locked then
 			state.info = info
 		elseif info then
-			state.errorCode = if snapshot then "ODDS_CHANGED" else "UNAVAILABLE"
+			state.errorCode = if not snapshot
+				then "UNAVAILABLE"
+				elseif info.restricted then "TRAIT_CHANGED"
+				else "ODDS_CHANGED"
 		end
 		apply(snapshot)
 	end)
@@ -99,12 +103,7 @@ local function describe(def: Types.TraitDef): string
 	return table.concat(effects, " · ")
 end
 
-function TraitView.confirmReroll(parent: Instance, traitId: string?, cost: number, onConfirm: () -> ()): ()
-	local current = traitId and definitions[traitId]
-	if not current or current.tier == "Common" or current.tier == "Uncommon" then
-		onConfirm()
-		return
-	end
+local function confirm(parent: Instance, title: string, action: string, details: { string }, onConfirm: () -> ()): ()
 	local modal: Modal.View
 	local restore: () -> ()
 	local closed = false
@@ -112,7 +111,7 @@ function TraitView.confirmReroll(parent: Instance, traitId: string?, cost: numbe
 		restore()
 		modal.screen:Destroy()
 	end
-	modal = Modal.create(parent, "Replace trait?", { { label = "Confirm reroll", value = "reroll" } }, nil, function()
+	modal = Modal.create(parent, title, { { label = action, value = "confirm" } }, nil, function()
 		if closed then
 			return
 		end
@@ -127,12 +126,83 @@ function TraitView.confirmReroll(parent: Instance, traitId: string?, cost: numbe
 		-- Let the same ButtonB input finish before re-enabling the detail screen.
 		task.defer(close)
 	end, {
-		body = {
-			string.format("Your current trait, %s, will be lost. Spend %d Trait Shards?", current.def.name, cost),
-		},
+		body = details,
 		closeText = "Cancel",
 	})
 	restore = UIController.overlay(modal.screen, modal.first)
+end
+
+local function confirmReroll(parent: Instance, traitId: string?, cost: number, onConfirm: () -> ()): ()
+	local current = traitId and definitions[traitId]
+	if not current or current.tier == "Common" or current.tier == "Uncommon" then
+		onConfirm()
+		return
+	end
+	confirm(parent, "Replace trait?", "Confirm reroll", {
+		string.format("Your current trait, %s, will be lost. Spend %d Trait Shards?", current.def.name, cost),
+	}, onConfirm)
+end
+
+local function renderDirect(
+	body: ScrollingFrame,
+	info: TraitRemote.Info,
+	state: State,
+	onAction: (string, ...any) -> ()
+): ()
+	Page.label(body, TraitRemote.message("RESTRICTED_REGION"))
+	local direct = info.direct
+	if not direct then
+		return
+	end
+	Page.label(body, string.format("Choose a trait · Gold balance %d", direct.gold))
+	if state.pending then
+		Page.label(body, "Refreshing trait options…")
+	elseif info.locked then
+		Page.label(body, TraitRemote.message("UNIT_LOCKED"))
+	end
+	for _, option in direct.options do
+		Page.label(body, string.format("%s · %s\n%s", option.name, option.tier, describe(definitions[option.id].def)))
+		local status = if option.id == info.traitId
+			then " · Equipped"
+			elseif direct.gold < option.cost then " · Insufficient Gold"
+			else ""
+		local enabled = not state.pending and TraitRemote.canSelect(info, option.id)
+		local button = Page.button(
+			body,
+			string.format("Equip %s · %d Gold%s", option.name, option.cost, status),
+			function()
+				local screen = body:FindFirstAncestorOfClass("ScreenGui")
+				local parent = screen and screen.Parent
+				if
+					not enabled
+					or not screen
+					or not screen.Enabled
+					or not parent
+					or state.info ~= info
+					or state.pending
+				then
+					return
+				end
+				local current = info.traitId and definitions[info.traitId]
+				local details = { string.format("Equip %s for %d Gold?", option.name, option.cost) }
+				if info.traitId then
+					table.insert(
+						details,
+						string.format(
+							"Your current trait, %s, will be lost.",
+							if current then current.def.name else info.traitId
+						)
+					)
+				end
+				confirm(parent, "Choose trait", "Confirm selection", details, function()
+					if state.info == info and not state.pending then
+						onAction("SelectRestrictedTrait", info.uid, option.id)
+					end
+				end)
+			end
+		)
+		Controls.setEnabled(button, enabled)
+	end
 end
 
 function TraitView.render(
@@ -153,9 +223,18 @@ function TraitView.render(
 	local info = state.info
 	if not info then
 		Page.label(body, string.format("Trait Shards · %d", shards))
-		Page.label(body, if state.pending then "Loading trait odds…" else TraitRemote.message(state.errorCode))
+		Page.label(body, if state.pending then "Loading trait details…" else TraitRemote.message(state.errorCode))
 		if not state.pending then
-			Page.button(body, "Refresh trait odds", function()
+			Page.button(body, "Refresh trait details", function()
+				onAction("RefreshTraitInfo", unit.uid)
+			end)
+		end
+		return
+	end
+	if info.restricted then
+		renderDirect(body, info, state, onAction)
+		if not state.pending then
+			Page.button(body, "Refresh trait options", function()
 				onAction("RefreshTraitInfo", unit.uid)
 			end)
 		end
@@ -181,8 +260,6 @@ function TraitView.render(
 	end
 	if state.pending then
 		Page.label(body, "Refreshing trait odds…")
-	elseif info.restricted then
-		Page.label(body, TraitRemote.message("RESTRICTED_REGION"))
 	elseif info.locked then
 		Page.label(body, TraitRemote.message("UNIT_LOCKED"))
 	elseif info.shards < info.cost then
@@ -192,7 +269,7 @@ function TraitView.render(
 			local screen = body:FindFirstAncestorOfClass("ScreenGui")
 			local parent = screen and screen.Parent
 			if screen and screen.Enabled and parent and state.info == info and not state.pending then
-				TraitView.confirmReroll(parent, unit.trait, info.cost, function()
+				confirmReroll(parent, unit.trait, info.cost, function()
 					if state.info == info and not state.pending then
 						onAction("RerollTrait", unit.uid)
 					end

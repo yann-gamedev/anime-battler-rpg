@@ -154,7 +154,7 @@ local function mutate(name: string, ...: any): ()
 end
 
 local function inventoryAction(name: string, ...: any): ()
-	if name ~= "RerollTrait" and name ~= "RefreshTraitInfo" then
+	if name ~= "RerollTrait" and name ~= "RefreshTraitInfo" and name ~= "SelectRestrictedTrait" then
 		mutate(name, ...)
 		return
 	end
@@ -168,17 +168,26 @@ local function inventoryAction(name: string, ...: any): ()
 		return
 	end
 	local info = trait.info
-	if not info or info.uid ~= uid or info.restricted or info.locked or info.shards < info.cost then
+	local _, selected = ...
+	local direct = name == "SelectRestrictedTrait"
+	if not info or info.uid ~= uid then
 		return
 	end
-	beginRequest("Rerolling trait…")
-	local snapshot, updatedInfo, code = TraitRemote.reroll(uid)
+	if direct then
+		if type(selected) ~= "string" or not TraitRemote.canSelect(info, selected) then
+			return
+		end
+	elseif info.restricted or info.locked or info.shards < info.cost then
+		return
+	end
+	beginRequest(if direct then "Equipping trait…" else "Rerolling trait…")
+	local snapshot, updatedInfo, code = TraitRemote.change(uid, if direct then selected else nil)
 	busy = false
 	if snapshot and updatedInfo then
 		data = snapshot
 		trait.uid = uid
 		trait.info = updatedInfo
-		notice = "Trait rerolled."
+		notice = if direct then "Trait equipped." else "Trait rerolled."
 		refreshTrait(uid)
 	else
 		notice = TraitRemote.message(code)
