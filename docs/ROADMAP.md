@@ -1,0 +1,48 @@
+# ROADMAP.md — Milestone & Task
+
+Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya jika Definition of Done di `AGENTS.md` terpenuhi.
+
+**Milestone aktif: M0**
+
+## M0 — Setup proyek
+- [ ] Rojo, Wally, StyLua, Selene, Rokit terpasang; `rojo serve` jalan → `prompts/00-setup.md`
+- [ ] Pindahkan `build_main_menu.luau` ke `studio/ui/`
+
+## M1 — Fondasi data
+- [ ] `Types.luau` + semua `Config/` awal dari `docs/UNITS.md` & `docs/ECONOMY.md` → `prompts/01-types-config.md`
+- [ ] `DataService` dengan ProfileStore, template, migrasi, API mutasi → `prompts/02-data-service.md`
+
+## M2 — Battle
+- [ ] `BattleSim` deterministik + sinergi + 15 ultimate + test → `prompts/03-battle-sim.md`
+- [ ] `BattleService` + `BattleViewController` (replay dengan model placeholder) → `prompts/04-battle-view.md`
+
+## M3 — UI & progres
+- [ ] Fondasi UI (Theme, komponen), Main Menu dipindah ke controller, Team Board 3×3 → `prompts/05-ui-team-board.md`
+- [ ] Story 30 stage, reward, level & merge unit, inventory → `prompts/06-story-progression.md`
+
+## M4 — Gacha & monetisasi
+- [ ] Banner, pity, layar odds, `ComplianceService` → `prompts/07-summon-banner.md`
+- [ ] Trait & reroll + pity trait → `prompts/08-traits.md`
+- [ ] Developer products, gamepass, ProcessReceipt idempoten, toko langsung → `prompts/09-monetization.md`
+
+## M5 — Lobby & siap soft launch
+- [ ] Lobby sosial, pajangan unit, quest harian/mingguan, boss raid, analytics → `prompts/10-lobby-quests.md`
+- [ ] Review keamanan semua service sensitif → `prompts/review-security.md`
+- [ ] **SOFT LAUNCH MVP** (uji dengan teman, pantau metrik di GDD §12)
+
+## M6 — Trade
+- [ ] `TradeService`, Trading Plaza, UI trade → `prompts/11-trade.md`
+- [ ] Review keamanan trade + uji dupe manual
+
+## M7 — Asrama & Perang Wilayah
+- [ ] `GuildService`, `TerritoryService`, peta wilayah, siklus mingguan → `prompts/12-guild-territory.md`
+- [ ] PvP ladder async (opsional, pakai snapshot yang sama)
+
+## M8 — Ekspansi Realm 2
+- [ ] Desain Realm 2 di dokumen dulu (GDD, UNITS) → baru task kode
+
+## Task berulang
+- Tambah unit baru → `prompts/new-unit.md`
+- Perbaiki bug → `prompts/bugfix.md`
+- Pass balancing → `prompts/balance-pass.md`
+- Review keamanan → `prompts/review-security.md`

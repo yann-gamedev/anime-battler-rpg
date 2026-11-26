@@ -1,0 +1,21 @@
+# Build Rojo
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Wally
+Packages/
+ServerPackages/
+DevPackages/
+wally.lock
+
+# Editor / OS
+.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.key
+.claude/settings.local.json
