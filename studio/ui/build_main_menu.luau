@@ -1,3 +1,4 @@
+--!strict
 -- Builds StarterGui.MainMenu (Play / Settings / Quit). Run in Studio edit mode
 -- (execute_luau or Command Bar). Re-running replaces the previous MainMenu.
 local StarterGui = game:GetService("StarterGui")
@@ -10,8 +11,8 @@ end
 local IDLE = Color3.fromRGB(38, 42, 58)
 local TEXT = Color3.fromRGB(235, 238, 245)
 
-local function new(class, props, parent)
-	local inst = Instance.new(class)
+local function new(class: string, props: { [string]: any }, parent: Instance): any
+	local inst: any = Instance.new(class)
 	for key, value in props do
 		inst[key] = value
 	end
@@ -19,7 +20,7 @@ local function new(class, props, parent)
 	return inst
 end
 
-local function button(name, text, order, parent)
+local function button(name: string, text: string, order: number, parent: Instance): TextButton
 	local b = new("TextButton", {
 		Name = name,
 		Text = text,
@@ -40,7 +41,7 @@ local function button(name, text, order, parent)
 	return b
 end
 
-local function panel(name, title, parent)
+local function panel(name: string, title: string, parent: Instance): Frame
 	local p = new("Frame", {
 		Name = name,
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -103,68 +104,5 @@ local settings = panel("SettingsPanel", "Settings", bg)
 settings.Visible = false
 button("MusicButton", "Music: On", 1, settings)
 button("BackButton", "Back", 2, settings)
-
-local controller = new("LocalScript", { Name = "MenuController" }, gui)
-controller.Source = [==[
-local Players = game:GetService("Players")
-local GuiService = game:GetService("GuiService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-
-local player = Players.LocalPlayer
-local gui = script.Parent
-local menu = gui.Background.Menu
-local settings = gui.Background.SettingsPanel
-
-local IDLE = Color3.fromRGB(38, 42, 58)
-local HOVER = Color3.fromRGB(62, 68, 94)
-local fade = TweenInfo.new(0.12)
-
-local function hover(b)
-	local function to(c)
-		TweenService:Create(b, fade, { BackgroundColor3 = c }):Play()
-	end
-	b.MouseEnter:Connect(function() to(HOVER) end)
-	b.MouseLeave:Connect(function() to(IDLE) end)
-	b.SelectionGained:Connect(function() to(HOVER) end)
-	b.SelectionLost:Connect(function() to(IDLE) end)
-end
-
-for _, p in { menu, settings } do
-	for _, b in p:GetChildren() do
-		if b:IsA("TextButton") then hover(b) end
-	end
-end
-
-local function show(p, first)
-	menu.Visible = p == menu
-	settings.Visible = p == settings
-	if UserInputService.GamepadEnabled then
-		GuiService.SelectedObject = first
-	end
-end
-
--- Other systems read this attribute to play or mute music.
-player:SetAttribute("MusicEnabled", true)
-local function musicText()
-	settings.MusicButton.Text = player:GetAttribute("MusicEnabled") and "Music: On" or "Music: Off"
-end
-
-menu.PlayButton.Activated:Connect(function()
-	GuiService.SelectedObject = nil
-	gui.Enabled = false
-end)
-menu.SettingsButton.Activated:Connect(function() show(settings, settings.MusicButton) end)
--- Roblox cannot close the client from a script; Kick is the standard "quit".
-menu.QuitButton.Activated:Connect(function() player:Kick("Thanks for playing!") end)
-settings.MusicButton.Activated:Connect(function()
-	player:SetAttribute("MusicEnabled", not player:GetAttribute("MusicEnabled"))
-	musicText()
-end)
-settings.BackButton.Activated:Connect(function() show(menu, menu.PlayButton) end)
-
-musicText()
-show(menu, menu.PlayButton)
-]==]
 
 return "MainMenu created in StarterGui"

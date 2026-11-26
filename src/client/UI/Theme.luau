@@ -1,0 +1,33 @@
+--!strict
+
+return table.freeze({
+	background = Color3.fromRGB(12, 13, 18),
+	panel = Color3.fromRGB(28, 32, 46),
+	button = Color3.fromRGB(38, 42, 58),
+	focus = Color3.fromRGB(62, 68, 94),
+	border = Color3.fromRGB(70, 76, 100),
+	text = Color3.fromRGB(235, 238, 245),
+	muted = Color3.fromRGB(181, 190, 210),
+	accent = Color3.fromRGB(109, 83, 167),
+	error = Color3.fromRGB(255, 174, 175),
+	rarity = table.freeze({
+		Rare = Color3.fromRGB(117, 181, 255),
+		Epic = Color3.fromRGB(194, 148, 255),
+		Legendary = Color3.fromRGB(250, 206, 124),
+		Mythic = Color3.fromRGB(255, 145, 160),
+	} :: { [string]: Color3 }),
+	font = Enum.Font.GothamMedium,
+	bold = Enum.Font.GothamBold,
+	textSize = 14,
+	titleSize = 22,
+	radius = 8,
+	gap = 8,
+	padding = 12,
+	touch = 44,
+	cellHeight = 60,
+	cardHeight = 64,
+	statusHeight = 48,
+	maxWidth = 560,
+	scrollbar = 4,
+	menuFade = TweenInfo.new(0.12),
+})
