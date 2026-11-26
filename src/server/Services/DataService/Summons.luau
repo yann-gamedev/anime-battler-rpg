@@ -6,6 +6,8 @@ local HttpService = game:GetService("HttpService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Types = require(Shared.Types)
 local Signal = require(Shared.Util.Signal)
+local Units = require(Shared.Config.Units)
+local AnalyticsService = require(script.Parent.Parent.AnalyticsService)
 local Commit = require(script.Parent.Commit)
 local SummonRules = require(script.Parent.SummonRules)
 
@@ -47,6 +49,13 @@ function Summons.create(
 		if code ~= nil then
 			return code, nil
 		end
+		-- Analytics dari unit yang benar-benar diberikan commit ini.
+		local rarities: { string } = {}
+		for _, unit in granted or {} do
+			local def = Units[unit.unitId]
+			table.insert(rarities, if def then def.rarity else "unknown")
+		end
+		AnalyticsService.logSummon(player, request.bannerId, request.currency, rarities)
 		return nil, granted
 	end
 

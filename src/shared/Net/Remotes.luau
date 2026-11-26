@@ -28,6 +28,12 @@ local Remotes = {
 		"BuyAcademyItem", -- (itemId: string) → Result<ShopInfo>
 		"GetBattlePass", -- () → Result<PassInfo>
 		"ClaimBattlePassTier", -- (track: "Free" | "Premium", tier: number, unitId: string?) → Result<PassInfo>
+		"GetLobbyInfo", -- () → Result<LobbyInfo>
+		"SetLobbyShowcase", -- (uid: string, skinId: string?) → Result<LobbyInfo>; "" uid = kosongkan
+		"GetQuests", -- () → Result<QuestInfo>
+		"ClaimQuest", -- (questId: string, periodKey: string) → Result<QuestInfo>
+		"GetRaidInfo", -- () → Result<RaidInfo>
+		"StartRaid", -- (teamIndex: number) → Result<RaidResultData>; 1 percobaan gratis per hari UTC
 	},
 }
 

@@ -43,6 +43,8 @@ local Constants = {
 	BATTLE_MOVE_TICKS = 5,
 	BATTLE_ICE_SLOW_SECONDS = 1,
 	DAMAGE_DEFENSE_BASE = 100,
+	-- Batas atas BattleUnitInput.hpMultiplier (hanya musuh config server, mis. boss raid).
+	BATTLE_HP_MULTIPLIER_MAX = 1000,
 
 	-- Rate limit per pemain per remote. Setiap RemoteFunction WAJIB punya entri di sini.
 	RATE_LIMITS = {
@@ -67,6 +69,12 @@ local Constants = {
 		BuyAcademyItem = { max = 3, windowSec = 5 },
 		GetBattlePass = { max = 6, windowSec = 10 },
 		ClaimBattlePassTier = { max = 5, windowSec = 5 },
+		GetLobbyInfo = { max = 6, windowSec = 10 },
+		SetLobbyShowcase = { max = 4, windowSec = 10 },
+		GetQuests = { max = 6, windowSec = 10 },
+		ClaimQuest = { max = 5, windowSec = 5 },
+		GetRaidInfo = { max = 6, windowSec = 10 },
+		StartRaid = { max = 1, windowSec = 3 },
 	} :: { [string]: RateLimitRule },
 
 	-- Batas panjang ID banner dari client (validasi bentuk sebelum lookup config).
