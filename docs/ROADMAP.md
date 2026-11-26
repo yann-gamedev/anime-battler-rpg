@@ -27,6 +27,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 
 ## M4 — Gacha & monetisasi
 - [ ] Banner, pity, layar odds, `ComplianceService` → `prompts/07-summon-banner.md`
+  - Build, 66 tes Luau, dan uji integrasi dengan mock lulus. Verifikasi PolicyService asli dan UI di Roblox Studio masih tertunda.
 - [ ] Trait & reroll + pity trait → `prompts/08-traits.md`
 - [ ] Developer products, gamepass, ProcessReceipt idempoten, toko langsung → `prompts/09-monetization.md`
 

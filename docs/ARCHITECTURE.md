@@ -220,7 +220,7 @@ type Profile = {
 	units: { [string]: OwnedUnit },          -- key = uid
 	teams: { { name: string, slots: { string } } }, -- 9 entri; "" = slot kosong
 	story: { cleared: { [string]: number } }, -- stageId → bintang 1..3
-	pity: { [string]: { sinceLegendary: number, sinceMythic: number } }, -- per bannerId
+	pity: { [string]: { sinceLegendary: number, sinceMythic: number, guaranteedFeatured: boolean? } }, -- per bannerId
 	materials: { XPScrolls: number },
 	progress: { tutorialBattleCleared: boolean, firstThreeStarClaimed: { [string]: boolean }, replayDay: number, replayCount: number },
 	traitPity: number,                       -- reroll sejak Legendaris+ terakhir (UNITS §5)
@@ -254,6 +254,12 @@ Template default ada di `DataService/Template.luau`. Batas: maks 500 unit per pe
 `GetMyData`, `LevelUpUnit`, `MergeUnit`, `DismantleUnit`, dan `LockUnit` mengembalikan snapshot milik pemanggil saat berhasil. XP Scroll adalah material inventory. Field progres tambahan direkonsiliasi dalam skema v1, dan reward Gems pertama untuk 3★ diklaim bersama progres stage dalam satu mutasi profil.
 
 Di place uji dengan API Services aktif, mulai dari profil baru melalui Play → Onboarding. Menangkan tutorial dan cek 10 tiket. Isi tim, lalu selesaikan 1-1 sampai 1-3. Ulangi 1-1 dengan 3★ dan pastikan Gems pertama tidak diberikan lagi. Uji level up, lock, konfirmasi merge dan dismantle, lalu Stop → Play untuk memastikan progres tersimpan.
+
+### Summon dan peluang
+
+`GetBannerInfo()` mengirim jadwal, harga, status restricted, pity, persentase dasar dan aktual 1×, serta persentase masing-masing posisi draw 10×. Banner aktif dan state pity ditentukan server. `Summon(bannerId, count, payWith)` mengembalikan unit yang diberikan dan snapshot banner terbaru. Saldo, inventaris, dan pity berubah dalam satu mutasi profil. Jika state yang mendasari peluang Gems berubah, server mengembalikan `ODDS_CHANGED` agar pemain melihat peluang terbaru sebelum mencoba lagi.
+
+Di place uji yang dipublikasikan, buka Summon lewat Play atau hadiah onboarding, lalu periksa odds 1× dan semua posisi 10×. Untuk menguji pembatasan, masukkan UserId penguji ke `Constants.ADMIN_USER_IDS` dan gunakan **Server** Command Bar. Jalankan `require(game:GetService("ServerScriptService").Server.Services.ComplianceService).adminForceRestricted(player, true)` dengan `player` dari sesi uji. Uji bahwa UI menyembunyikan opsi Gems, server menolak request Gems, dan tiket gameplay bisa dipakai. Gunakan argumen `false` untuk melepas override dan memeriksa hasil kebijakan asli.
 
 ## 7. Studio build scripts (`studio/`)
 
