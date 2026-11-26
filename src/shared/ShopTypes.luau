@@ -33,7 +33,7 @@ export type ShopInfo = {
 export type PreparedPurchase = { id: number, kind: ProductKind }
 
 -- Battle Pass (GetBattlePass).
-export type RewardKind = "Currency" | "UnitChoice" | "Skin"
+export type RewardKind = "Currency" | "UnitChoice" | "Skin" | "ProfileFrame"
 export type Reward = { kind: RewardKind, id: string?, amount: number?, options: { string }? }
 export type BattlePassTrack = "Free" | "Premium"
 export type BattlePassTierDef = { free: { Reward }, premium: { Reward } }
@@ -61,6 +61,8 @@ export type PassInfo = {
 	unlockedTier: number,
 	premium: boolean,
 	tiers: { PassTierView },
+	-- Bingkai profil terakhir yang diperoleh (lintas musim); nil bila belum pernah diperoleh.
+	profileFrameId: string?,
 }
 
 return table.freeze({})

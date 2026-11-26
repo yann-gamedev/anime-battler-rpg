@@ -14,6 +14,8 @@ export type Options = { now: (() -> number)?, newUid: (() -> string)? }
 export type Ledger = {
 	-- Salinan record musim tersanitasi; nil bila data belum siap.
 	getSeason: (player: Player, seasonId: string) -> Types.BattlePassSeasonRecord?,
+	-- Bingkai profil terakhir yang dimiliki (lintas musim), atau nil.
+	getProfileFrame: (player: Player) -> string?,
 	addXp: (player: Player, seasonId: string, amount: number, maxXp: number) -> (string?, number?),
 	claim: (player: Player, request: ClaimRequest) -> string?,
 }
@@ -44,6 +46,16 @@ function BattlePass.create(
 		return ShopRules.readSeason(seasons[seasonId])
 	end
 
+	local function getProfileFrame(player: Player): string?
+		local session = getSession(player)
+		local battlePass = if session then (session.Data :: any).battlePass else nil
+		if type(battlePass) ~= "table" or type(battlePass.profileFrames) ~= "table" then
+			return nil
+		end
+		local frameId = battlePass.profileFrameId
+		return if type(frameId) == "string" and battlePass.profileFrames[frameId] == true then frameId else nil
+	end
+
 	local function addXp(player: Player, seasonId: string, amount: number, maxXp: number): (string?, number?)
 		local xp: number? = nil
 		local code = Commit.run(getSession, changed, player, function(draft: Types.Profile)
@@ -67,7 +79,7 @@ function BattlePass.create(
 		)
 	end
 
-	return { getSeason = getSeason, addXp = addXp, claim = claim }
+	return { getSeason = getSeason, getProfileFrame = getProfileFrame, addXp = addXp, claim = claim }
 end
 
 return table.freeze(BattlePass)

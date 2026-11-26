@@ -6,6 +6,7 @@ local Constants = require(script.Parent.Constants)
 local Economy = require(script.Parent.Economy)
 local Products = require(script.Parent.Products)
 local Progression = require(script.Parent.Progression)
+local ProfileFrames = require(script.Parent.ProfileFrames)
 local Skins = require(script.Parent.Skins)
 local Stages = require(script.Parent.Stages)
 local Synergies = require(script.Parent.Synergies)
@@ -75,6 +76,8 @@ local function checkReward(reward: Types.Reward, label: string): ()
 		end
 	elseif reward.kind == "Skin" then
 		assert(Skins[reward.id :: string], `{label}: unknown skin`)
+	elseif reward.kind == "ProfileFrame" then
+		assert(ProfileFrames[reward.id :: string], `{label}: unknown profile frame`)
 	else
 		error(`{label}: unknown reward kind`)
 	end

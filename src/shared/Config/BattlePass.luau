@@ -1,7 +1,7 @@
 --!strict
 -- Battle Pass (docs/ECONOMY.md §6). BASELINE PLACEHOLDER: angka reward bebas disetel ulang oleh desainer.
 -- Musim 28 hari, 30 tier. Track gratis: Gold, Trait Shards, ~1.000 Gems, 1 unit Epic pilihan.
--- Track premium: tambahan Gems, Shards, dan 1 skin musim. Tidak ada unit yang hanya ada di premium.
+-- Track premium: tambahan Gems, Shards, 1 skin musim, dan bingkai profil (tier 30). Tidak ada unit yang hanya ada di premium.
 local Types = require(script.Parent.Parent.Types)
 local TableUtil = require(script.Parent.Parent.Util.TableUtil)
 local Units = require(script.Parent.Units)
@@ -44,7 +44,9 @@ local function buildSeasonOneTiers(): { Types.BattlePassTierDef }
 		end
 		if tier == TIER_COUNT then
 			local skin: Types.Reward = { kind = "Skin", id = "skin_s1_starfall" }
+			local frame: Types.Reward = { kind = "ProfileFrame", id = "s1_academy_frame" }
 			table.insert(premium, skin)
+			table.insert(premium, frame)
 		elseif tier % 5 == 0 then
 			table.insert(premium, currency("TraitShards", 10))
 		else

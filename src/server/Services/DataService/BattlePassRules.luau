@@ -5,6 +5,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Types = require(Shared.Types)
 local Units = require(Shared.Config.Units)
+local ProfileFrames = require(Shared.Config.ProfileFrames)
 local Skins = require(Shared.Config.Skins)
 local Validate = require(script.Parent.Parent.Parent.Util.Validate)
 local ProfileRules = require(script.Parent.ProfileRules)
@@ -97,6 +98,16 @@ local function applyReward(
 			return "INTERNAL_ERROR"
 		end
 		profile.skinsOwned[skinId] = true
+		return nil
+	elseif reward.kind == "ProfileFrame" then
+		local frameId = reward.id
+		if type(frameId) ~= "string" or not ProfileFrames[frameId] then
+			return "INTERNAL_ERROR"
+		end
+		-- Draft sudah direkonsiliasi Commit.run, jadi profileFrames selalu ada.
+		local battlePass = profile.battlePass :: any
+		battlePass.profileFrames[frameId] = true
+		battlePass.profileFrameId = frameId
 		return nil
 	end
 	return "INTERNAL_ERROR"
