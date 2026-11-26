@@ -255,6 +255,7 @@ local function renderShop(page: Page.Page, info: Remote.ShopInfo): ()
 end
 
 local function renderPass(page: Page.Page, info: Remote.PassInfo): ()
+	Pass.profileFrame(page, info.profileFrameId, Players.LocalPlayer.DisplayName)
 	Page.label(page.body, info.seasonId .. (if info.active then " · Active" else " · Inactive"))
 	Page.label(page.body, "Starts " .. Pass.utc(info.startsAt) .. "\nEnds " .. Pass.utc(info.endsAt))
 	Page.label(
