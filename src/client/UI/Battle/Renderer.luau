@@ -10,13 +10,6 @@ local Arena = require(Shared.Config.BattleArena)
 local Units = require(Shared.Config.Units)
 local Theme = require(script.Parent.Parent.Theme)
 
-local elementColors: { [Types.Element]: Color3 } = {
-	Api = Color3.fromRGB(245, 109, 88),
-	Es = Color3.fromRGB(122, 223, 250),
-	Petir = Color3.fromRGB(244, 205, 106),
-	Cahaya = Color3.fromRGB(255, 240, 177),
-	Bayangan = Color3.fromRGB(178, 141, 244),
-}
 local friendly = Color3.fromRGB(128, 234, 191)
 local enemy = Color3.fromRGB(255, 141, 152)
 local MAX_VISIBLE = 2 * Constants.BOARD_UNITS_MAX
@@ -269,7 +262,7 @@ function Renderer.apply(scene: Scene, event: Types.BattleEvent, speed: number): 
 		scene.units[event.unit] = {
 			id = event.unit,
 			name = if event.owner then "Familiar" else def.name,
-			color = elementColors[def.element],
+			color = Theme.element[def.element],
 			side = event.side,
 			cell = event.cell,
 			hp = event.hp,

@@ -58,6 +58,13 @@ function MenuController.start(): ()
 	local musicButton = settings.MusicButton :: TextButton
 	local backButton = settings.BackButton :: TextButton
 
+	playButton.NextSelectionDown = settingsButton
+	settingsButton.NextSelectionUp = playButton
+	settingsButton.NextSelectionDown = quitButton
+	quitButton.NextSelectionUp = settingsButton
+	musicButton.NextSelectionDown = backButton
+	backButton.NextSelectionUp = musicButton
+
 	for _, button in { playButton, settingsButton, quitButton, musicButton, backButton } do
 		wireHighlight(button)
 	end

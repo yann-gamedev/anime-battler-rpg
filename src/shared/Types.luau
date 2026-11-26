@@ -164,9 +164,9 @@ export type TeamBoardUnit = {
 	uid: string,
 	unitId: string,
 	name: string,
-	rarity: string,
-	element: string,
-	status: string,
+	rarity: Rarity,
+	element: Element,
+	status: Status,
 	stars: number,
 	level: number,
 }

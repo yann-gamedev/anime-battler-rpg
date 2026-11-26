@@ -21,6 +21,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 
 ## M3 — UI & progres
 - [ ] Fondasi UI (Theme, komponen), Main Menu dipindah ke controller, Team Board 3×3 → `prompts/05-ui-team-board.md`
+  - Build, tes draft dan sinergi, serta validasi latihan lokal lulus. Uji iPhone SE/tablet dan penyimpanan setelah rejoin di Studio masih tertunda.
 - [ ] Story 30 stage, reward, level & merge unit, inventory → `prompts/06-story-progression.md`
 
 ## M4 — Gacha & monetisasi

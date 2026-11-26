@@ -2,16 +2,14 @@
 -- Builds StarterGui.MainMenu (Play / Settings / Quit). Run in Studio edit mode
 -- (execute_luau or Command Bar). Re-running replaces the previous MainMenu.
 local StarterGui = game:GetService("StarterGui")
+local StarterPlayer = game:GetService("StarterPlayer")
+local client = assert(
+	StarterPlayer.StarterPlayerScripts:FindFirstChild("Client"),
+	"Connect Rojo in Studio edit mode before building the Main Menu."
+)
+local Theme = require(client.UI.Theme)
 
-local old = StarterGui:FindFirstChild("MainMenu")
-if old then
-	old:Destroy()
-end
-
-local IDLE = Color3.fromRGB(38, 42, 58)
-local TEXT = Color3.fromRGB(235, 238, 245)
-
-local function new(class: string, props: { [string]: any }, parent: Instance): any
+local function new(class: string, props: { [string]: any }, parent: Instance?): any
 	local inst: any = Instance.new(class)
 	for key, value in props do
 		inst[key] = value
@@ -25,17 +23,17 @@ local function button(name: string, text: string, order: number, parent: Instanc
 		Name = name,
 		Text = text,
 		LayoutOrder = order,
-		Size = UDim2.new(1, 0, 0, 56),
-		BackgroundColor3 = IDLE,
+		Size = UDim2.new(1, 0, 0, Theme.menuButtonHeight),
+		BackgroundColor3 = Theme.button,
 		AutoButtonColor = false,
-		TextColor3 = TEXT,
-		FontFace = Font.fromEnum(Enum.Font.GothamMedium),
-		TextSize = 22,
+		TextColor3 = Theme.text,
+		Font = Theme.font,
+		TextSize = Theme.titleSize,
 	}, parent)
-	new("UICorner", { CornerRadius = UDim.new(0, 8) }, b)
+	new("UICorner", { CornerRadius = UDim.new(0, Theme.radius) }, b)
 	new("UIStroke", {
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		Color = Color3.fromRGB(70, 76, 100),
+		Color = Theme.border,
 		Thickness = 1,
 	}, b)
 	return b
@@ -46,37 +44,38 @@ local function panel(name: string, title: string, parent: Instance): Frame
 		Name = name,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.3, 0.6),
+		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
 	}, parent)
-	new("UISizeConstraint", { MinSize = Vector2.new(260, 320), MaxSize = Vector2.new(420, 520) }, p)
+	local width = new("UISizeConstraint", {}, p)
+	width.MaxSize = Vector2.new(Theme.menuWidth, width.MaxSize.Y)
 	new("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
-		Padding = UDim.new(0, 12),
+		Padding = UDim.new(0, Theme.gap),
 	}, p)
 	local t = new("TextLabel", {
 		Name = "Title",
 		Text = title,
 		LayoutOrder = 0,
-		Size = UDim2.new(1, 0, 0, 80),
+		Size = UDim2.new(1, 0, 0, Theme.menuTitleHeight),
 		BackgroundTransparency = 1,
-		TextColor3 = TEXT,
-		FontFace = Font.fromEnum(Enum.Font.GothamBold),
+		TextColor3 = Theme.text,
+		Font = Theme.bold,
 		TextScaled = true,
 	}, p)
-	new("UITextSizeConstraint", { MaxTextSize = 56 }, t)
+	new("UITextSizeConstraint", { MaxTextSize = Theme.menuTitleSize }, t)
 	return p
 end
 
 local gui = new("ScreenGui", {
 	Name = "MainMenu",
 	ResetOnSpawn = false,
-	IgnoreGuiInset = true,
+	ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets,
 	DisplayOrder = 10,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-}, StarterGui)
+}, nil)
 
 local bg = new("Frame", {
 	Name = "Background",
@@ -86,13 +85,13 @@ local bg = new("Frame", {
 }, gui)
 new("UIGradient", {
 	Rotation = 90,
-	Color = ColorSequence.new(Color3.fromRGB(28, 32, 46), Color3.fromRGB(12, 13, 18)),
+	Color = ColorSequence.new(Theme.panel, Theme.background),
 }, bg)
 new("UIPadding", {
-	PaddingTop = UDim.new(0, 24),
-	PaddingBottom = UDim.new(0, 24),
-	PaddingLeft = UDim.new(0, 24),
-	PaddingRight = UDim.new(0, 24),
+	PaddingTop = UDim.new(0, Theme.padding),
+	PaddingBottom = UDim.new(0, Theme.padding),
+	PaddingLeft = UDim.new(0, Theme.padding),
+	PaddingRight = UDim.new(0, Theme.padding),
 }, bg)
 
 local menu = panel("Menu", "Battler RPG", bg)
@@ -104,5 +103,11 @@ local settings = panel("SettingsPanel", "Settings", bg)
 settings.Visible = false
 button("MusicButton", "Music: On", 1, settings)
 button("BackButton", "Back", 2, settings)
+
+local old = StarterGui:FindFirstChild("MainMenu")
+if old then
+	old:Destroy()
+end
+gui.Parent = StarterGui
 
 return "MainMenu created in StarterGui"

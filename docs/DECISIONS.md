@@ -23,6 +23,7 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-015 | 2026-11-26 | Jarak memakai Manhattan pada papan gabungan. Range tetap sesuai definisi kelas. Tiap Familiar yang memenuhi sinergi dapat bangkit satu kali | Menetapkan aturan grid dan interpretasi revive untuk implementasi awal |
 | D-016 | 2026-11-26 | Parameter uji awal: langkah tiap 5 tick, slow sinergi Es 1 detik, reflect Garrick 3 detik, buff Aurelian 5 detik, radius Elodie dan Umbra 1 sel, dan roh Morvaine memakai 25% stat pemanggil | Dokumen desain belum menetapkan nilai ini. Nilai runtime ada di Config untuk penyesuaian balancing |
 | D-017 | 2026-11-26 | `StartTestBattle` memerlukan Studio dan UserId admin. Replay menghentikan jam simulasi pada tick cinematic | Membatasi jalur uji dan mempertahankan sinkronisasi event saat cinematic dilewati |
+| D-018 | 2026-11-26 | Tombol Start battle di Team Board membuka latihan tanpa reward melawan susunan stage 1-1. Perubahan tim disimpan sebelum latihan dimulai | Memberi alur battle yang dapat dimainkan sebelum progres story tersedia dan menjaga hasil berdasarkan formasi yang divalidasi server |
 
 ## Keputusan terbuka (butuh manusia)
 

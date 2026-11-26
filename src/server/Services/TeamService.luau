@@ -22,7 +22,7 @@ local function failure(code: string): Types.Result
 end
 
 -- Batas unit di papan. Akan naik lewat progres story (GDD §6), BUKAN pembelian.
-local function getMaxBoardUnits(_profile: Types.Profile): number
+function TeamService.getMaxBoardUnits(_profile: Types.Profile): number
 	return math.min(Constants.BOARD_UNITS_START, Constants.BOARD_UNITS_MAX)
 end
 
@@ -62,10 +62,13 @@ local function buildBoardData(profile: Types.Profile, teamIndex: number): Types.
 		return a.uid < b.uid
 	end)
 
-	return { slots = slots, units = units, maxUnits = getMaxBoardUnits(profile) }
+	return { slots = slots, units = units, maxUnits = TeamService.getMaxBoardUnits(profile) }
 end
 
-local function handleGetTeamBoard(player: Player): Types.Result
+local function handleGetTeamBoard(player: Player, ...: any): Types.Result
+	if select("#", ...) ~= 0 then
+		return failure("INVALID_ARGUMENTS")
+	end
 	local profile = DataService.getProfile(player)
 	if not profile then
 		return failure("DATA_NOT_READY")
@@ -73,8 +76,11 @@ local function handleGetTeamBoard(player: Player): Types.Result
 	return { ok = true, data = buildBoardData(profile, ACTIVE_TEAM_INDEX) }
 end
 
-local function handleSaveTeam(player: Player, teamIndex: any, slots: any): Types.Result
-	if not Validate.isIntInRange(teamIndex, ACTIVE_TEAM_INDEX, Constants.TEAM_PRESETS_BASE) then
+local function handleSaveTeam(player: Player, teamIndex: any, slots: any, ...: any): Types.Result
+	if
+		not Validate.isIntInRange(teamIndex, ACTIVE_TEAM_INDEX, Constants.TEAM_PRESETS_BASE)
+		or select("#", ...) ~= 0
+	then
 		return failure("INVALID_TEAM_INDEX")
 	end
 	local profile = DataService.getProfile(player)
@@ -82,7 +88,7 @@ local function handleSaveTeam(player: Player, teamIndex: any, slots: any): Types
 	if not profile or not owned then
 		return failure("DATA_NOT_READY")
 	end
-	local ok, code = TeamRules.validateSlots(slots, owned, getMaxBoardUnits(profile))
+	local ok, code = TeamRules.validateSlots(slots, owned, TeamService.getMaxBoardUnits(profile))
 	if not ok then
 		return failure(code or "INVALID_SLOTS")
 	end
@@ -96,11 +102,11 @@ local function handleSaveTeam(player: Player, teamIndex: any, slots: any): Types
 	return { ok = true, data = buildBoardData(savedProfile, teamIndex) }
 end
 
-function TeamService.init()
+function TeamService.init(): ()
 	RemoteSetup.bindFunction("GetTeamBoard", handleGetTeamBoard)
 	RemoteSetup.bindFunction("SaveTeam", handleSaveTeam)
 end
 
-function TeamService.start() end
+function TeamService.start(): () end
 
 return TeamService

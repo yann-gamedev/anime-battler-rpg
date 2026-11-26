@@ -9,6 +9,7 @@ local Remotes = {
 	Functions = { -- RemoteFunction, hanya C→S
 		"GetMyData",
 		"StartTestBattle",
+		"StartPracticeBattle",
 		"GetTeamBoard", -- () → Result<TeamBoardData>
 		"SaveTeam", -- (teamIndex: number, slots: { string }) → Result<TeamBoardData>
 	},

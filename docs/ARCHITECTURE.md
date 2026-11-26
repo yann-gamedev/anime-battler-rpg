@@ -170,6 +170,7 @@ Client BattleViewController
 - Input menggunakan sel 1–9 per tim, dihitung dari baris depan. Log memakai sel 1–18 pada papan gabungan 3 kolom × 6 baris. Sel awal A = `10 - cell`, sel awal B = `9 + cell`. Log `spawn` memberi ID battle dan HP awal. Unit panggilan memiliki ID sendiri dan field `owner`.
 - Karena deterministik, PvP async dan Perang Wilayah memakai sim yang sama dengan snapshot tim pertahanan.
 - `BattleService.runPve(player, teamUnits, enemyDef)` membaca unit dari profil server. Remote `StartTestBattle(teamId)` hanya menerima indeks tim milik pemanggil. Di Studio, UserId yang ada di `Constants.ADMIN_USER_IDS` dapat menerima hasil melalui event pribadi `BattleResult`. Cinematic menghentikan jam replay pada tick ultimate sampai efek selesai atau dilewati.
+- `StartPracticeBattle(teamId)` memakai tim yang sudah tersimpan dan batas slot yang sama dengan `SaveTeam`. Lawan diambil dari stage 1-1. Latihan tidak memberi reward atau progres story.
 - Bentuk event log (contoh):
   ```lua
   { t = 12, kind = "attack", src = 3, dst = 7, dmg = 140, crit = false, hp = 300, shield = 0 }
@@ -251,7 +252,12 @@ Template default ada di `DataService/Template.luau`. Batas: maks 500 unit per pe
 - Logika interaktif TIDAK disimpan sebagai string `Source`. Build script hanya membuat instance; controller di `src/client/Controllers/` yang mencari instance itu berdasarkan nama.
 - Setelah dijalankan, hasil UI disimpan di place (Team Create) atau diekspor ke `.rbxm` dan ditaruh di `assets/` (opsional).
 
-> Catatan: `build_main_menu.luau` yang sudah ada masih menaruh logika di `controller.Source`. File dipindah ke `studio/ui/` di prompt 00; logikanya dipecah ke `src/client/Controllers/MenuController.luau` di prompt 05.
+### Uji Main Menu dan Team Board di Studio
+
+1. Sinkronkan Rojo di mode Edit, lalu jalankan `studio/ui/build_main_menu.luau` dan `studio/world/build_arena.luau` di Command Bar. Menu memakai `UI/Theme.luau`. Team Board dibangun saat runtime.
+2. Di place pengujian dengan akses DataStore Studio, jalankan Device Emulation untuk iPhone SE dan tablet. Uji Play, Settings, Music, Back, Quit, serta fokus gamepad.
+3. Di Team Board, gabungkan dua filter lalu kosongkan lagi. Tempatkan Kael dan Pip untuk melihat sinergi Api, lalu pindahkan dan hapus salah satu unit. Uji tap di perangkat sentuh dan drag kartu ke slot dengan mouse.
+4. Susun dan simpan tiga unit, lalu Stop → Play. Pastikan ketiga slot kembali terisi. Tekan **Start battle** untuk memulai replay latihan. Jika ada perubahan belum disimpan, UI menyimpannya dahulu dan hanya memulai battle jika server menerima tim.
 
 ## 8. Konfigurasi sebagai data
 

@@ -7,12 +7,14 @@ local Shared = ReplicatedStorage.Shared
 local Types = require(Shared.Types)
 local Constants = require(Shared.Config.Constants)
 local TestBattle = require(Shared.Config.TestBattle)
+local Stages = require(Shared.Config.Stages)
 local BattleArena = require(Shared.Config.BattleArena)
 local BattleSim = require(Shared.BattleSim)
 local TeamRules = require(Shared.TeamRules)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local DataService = require(script.Parent.DataService)
+local TeamService = require(script.Parent.TeamService)
 
 local BattleService = {}
 local seedGenerator = Random.new()
@@ -20,13 +22,14 @@ local seedGenerator = Random.new()
 local function simulate(
 	profile: Types.Profile,
 	teamUnits: { string },
-	enemyDef: Types.StageDef
+	enemyDef: Types.StageDef,
+	maxUnits: number
 ): (Types.BattleResult?, string?)
 	local owned: { [string]: boolean } = {}
 	for uid in profile.units do
 		owned[uid] = true
 	end
-	local valid, code = TeamRules.validateSlots(teamUnits, owned, Constants.BOARD_UNITS_MAX)
+	local valid, code = TeamRules.validateSlots(teamUnits, owned, maxUnits)
 	if not valid then
 		return nil, code
 	end
@@ -68,16 +71,13 @@ function BattleService.runPve(
 	if not profile then
 		return nil, "DATA_NOT_READY"
 	end
-	return simulate(profile, teamUnits, enemyDef)
+	return simulate(profile, teamUnits, enemyDef, TeamService.getMaxBoardUnits(profile))
 end
 
 function BattleService.init(): ()
 	local replay = RemoteSetup.getEvent("BattleResult")
-	RemoteSetup.bindFunction("StartTestBattle", function(player: Player, teamId: any, ...: any): Types.Result
-		if not RunService:IsStudio() or not table.find(Constants.ADMIN_USER_IDS, player.UserId) then
-			return { ok = false, code = "FORBIDDEN" }
-		end
-		if not Validate.isIntInRange(teamId, 1, Constants.TEAM_PRESETS_BASE) or select("#", ...) ~= 0 then
+	local function startSavedBattle(player: Player, teamId: any, testBattle: boolean): Types.Result
+		if not Validate.isIntInRange(teamId, 1, Constants.TEAM_PRESETS_BASE) then
 			return { ok = false, code = "INVALID_TEAM_ID" }
 		end
 		local arena = Workspace:FindFirstChild(BattleArena.modelName)
@@ -93,12 +93,30 @@ function BattleService.init(): ()
 		if not team then
 			return { ok = false, code = "INVALID_TEAM_ID" }
 		end
-		local result, code = simulate(profile, team.slots, TestBattle)
+		local enemy = if testBattle then TestBattle else Stages.chapters[1][1]
+		local maxUnits = if testBattle then Constants.BOARD_UNITS_MAX else TeamService.getMaxBoardUnits(profile)
+		local result, code = simulate(profile, team.slots, enemy, maxUnits)
 		if not result then
 			return { ok = false, code = code }
 		end
 		replay:FireClient(player, result)
 		return { ok = true }
+	end
+
+	RemoteSetup.bindFunction("StartTestBattle", function(player: Player, teamId: any, ...: any): Types.Result
+		if not RunService:IsStudio() or not table.find(Constants.ADMIN_USER_IDS, player.UserId) then
+			return { ok = false, code = "FORBIDDEN" }
+		end
+		if select("#", ...) ~= 0 then
+			return { ok = false, code = "INVALID_TEAM_ID" }
+		end
+		return startSavedBattle(player, teamId, true)
+	end)
+	RemoteSetup.bindFunction("StartPracticeBattle", function(player: Player, teamId: any, ...: any): Types.Result
+		if select("#", ...) ~= 0 then
+			return { ok = false, code = "INVALID_TEAM_ID" }
+		end
+		return startSavedBattle(player, teamId, false)
 	end)
 end
 

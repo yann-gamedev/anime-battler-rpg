@@ -1,168 +1,122 @@
 --!strict
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
-
-local Controls = require(script.Parent.Parent.UI.Components.Controls)
-local TeamBoardView = require(script.Parent.Parent.UI.TeamBoardView)
-local Theme = require(script.Parent.Parent.UI.Theme)
+local Shared = ReplicatedStorage.Shared
+local Types = require(Shared.Types)
+local TeamBoardDraft = require(Shared.TeamBoardDraft)
+local TeamRules = require(Shared.TeamRules)
+local UI = script.Parent.Parent.UI
+local Controls = require(UI.Components.Controls)
+local Modal = require(UI.Components.Modal)
+local Toast = require(UI.Components.Toast)
+local UnitCard = require(UI.Components.UnitCard)
+local TeamBoardDrag = require(UI.TeamBoardDrag)
+local TeamBoardRemote = require(UI.TeamBoardRemote)
+local TeamBoardView = require(UI.TeamBoardView)
+local Theme = require(UI.Theme)
 local UIController = require(script.Parent.UIController)
 
-type Unit = {
-	uid: string,
-	name: string,
-	rarity: string,
-	element: string,
-	status: string,
-	stars: number,
-	level: number,
-}
-
-type Board = {
-	slots: { string },
-	units: { Unit },
-	maxUnits: number,
-}
-
-local REMOTE_WAIT_SECONDS = 4
-local SLOW_REQUEST_SECONDS = 12
-local TEAM_INDEX = 1
-
 local TeamBoardController = {}
+local SLOW_REQUEST = 12
+local EMPTY = TeamRules.EMPTY_SLOT
+local ELEMENTS = { "Api", "Es", "Petir", "Cahaya", "Bayangan" }
+local RARITIES = { "Rare", "Epic", "Legendary", "Mythic" }
 local view: TeamBoardView.View
-local board: Board?
-local unitsByUid: { [string]: Unit } = {}
-local cards: { [string]: TextButton } = {}
+local playerGui: PlayerGui
+local bindCard: (TextButton, () -> (string?, string?)) -> ()
+local board: Types.TeamBoardData?
+local unitsByUid: { [string]: Types.TeamBoardUnit } = {}
+local cards: { [string]: UnitCard.View } = {}
 local selectedUid: string?
+local element: string?
+local rarity: string?
 local backToMenu: (() -> ())?
 local busy = false
 local dirty = false
 
-local function request(remoteName: string, slots: { string }?): (Board?, string?)
-	local remotes = ReplicatedStorage:WaitForChild("Remotes", REMOTE_WAIT_SECONDS)
-	local remote = if remotes then remotes:WaitForChild(remoteName, REMOTE_WAIT_SECONDS) else nil
-	if not remote or not remote:IsA("RemoteFunction") then
-		return nil, "Team service unavailable. Try again."
-	end
-
-	local invoked, result = pcall(function()
-		if slots then
-			return remote:InvokeServer(TEAM_INDEX, slots)
-		end
-		return remote:InvokeServer()
-	end)
-	if not invoked then
-		warn("[TeamBoard] " .. remoteName .. " failed: " .. tostring(result))
-		return nil, "Connection failed. Try again."
-	end
-	if type(result) ~= "table" or result.ok ~= true then
-		local code = if type(result) == "table" and type(result.code) == "string" then result.code else "UNKNOWN"
-		return nil, "Request failed (" .. code .. "). Try again."
-	end
-
-	local data = result.data
-	if
-		type(data) ~= "table"
-		or type(data.slots) ~= "table"
-		or type(data.units) ~= "table"
-		or type(data.maxUnits) ~= "number"
-		or #data.slots ~= #view.cells
-	then
-		return nil, "Unexpected server reply. Try again."
-	end
-	for index = 1, #view.cells do
-		if type(data.slots[index]) ~= "string" then
-			return nil, "Unexpected server reply. Try again."
-		end
-	end
-	for _, unit in data.units do
-		if
-			type(unit) ~= "table"
-			or type(unit.uid) ~= "string"
-			or type(unit.name) ~= "string"
-			or type(unit.rarity) ~= "string"
-			or type(unit.element) ~= "string"
-			or type(unit.status) ~= "string"
-			or type(unit.stars) ~= "number"
-			or type(unit.level) ~= "number"
-		then
-			return nil, "Unexpected unit data. Try again."
-		end
-	end
-	return data, nil
-end
-
 local function status(message: string, isError: boolean?): ()
-	view.status.Text = message
-	view.status.TextColor3 = if isError then Theme.error else Theme.muted
+	Toast.show(view.status, message, isError)
 end
 
-local function setEnabled(button: TextButton, enabled: boolean): ()
-	button.Active = enabled
-	button.Selectable = enabled
-	button.AutoButtonColor = enabled
-	button.TextColor3 = if enabled then Theme.text else Theme.muted
-end
-
-local function occupiedCount(slots: { string }): number
-	local count = 0
-	for _, uid in slots do
-		if uid ~= "" then
-			count += 1
-		end
-	end
-	return count
+local function canInteract(): boolean
+	return board ~= nil and not busy and view.screen.Enabled
 end
 
 local function refresh(): ()
 	local current = board
+	local deployed = if current then TeamBoardDraft.count(current.slots) else 0
+	view.count.Text = if current
+		then string.format("Front row at top  ·  %d/%d deployed", deployed, current.maxUnits)
+		else "Front row at top"
 	local placed: { [string]: number } = {}
-	if current then
-		view.count.Text =
-			string.format("Front row at top  ·  %d/%d deployed", occupiedCount(current.slots), current.maxUnits)
-	else
-		view.count.Text = "Front row at top"
-	end
 	for index, cell in view.cells do
-		local uid = if current then current.slots[index] else ""
+		local uid = if current then current.slots[index] else EMPTY
 		local unit = unitsByUid[uid]
-		cell.Text = if unit then unit.name elseif uid ~= "" then "Unknown unit" else "Empty"
+		cell.Text = if unit then unit.name else "Empty"
 		cell.BackgroundColor3 = if uid == selectedUid then Theme.accent else Theme.button
-		setEnabled(cell, current ~= nil and not busy)
-		if uid ~= "" then
+		Controls.setEnabled(cell, current ~= nil and not busy)
+		if uid ~= EMPTY then
 			placed[uid] = index
 		end
 	end
+
+	local visible = 0
 	for uid, card in cards do
 		local unit = unitsByUid[uid]
-		local slot = placed[uid]
-		local location = if slot then string.format("  ·  Slot %d", slot) else ""
-		card.Text = string.format(
-			"%s  ·  Lv %d  ·  %d★%s\n%s  ·  %s  ·  %s",
-			unit.name,
-			unit.level,
-			unit.stars,
-			location,
-			unit.rarity,
-			unit.element,
-			unit.status
-		)
-		card.BackgroundColor3 = if uid == selectedUid then Theme.accent else Theme.button
-		setEnabled(card, not busy)
+		local matches = TeamBoardDraft.matches(unit, element, rarity)
+		card.button.Visible = matches
+		if matches then
+			visible += 1
+			UnitCard.update(card, unit, placed[uid], selectedUid == uid, not busy)
+		else
+			Controls.setEnabled(card.button, false)
+		end
 	end
-	view.action.Text = if current then "Save team" else "Retry"
-	setEnabled(view.action, not busy and (current == nil or dirty))
-	setEnabled(view.back, backToMenu ~= nil)
+	view.rosterMessage.Visible = visible == 0
+	view.rosterMessage.Text = if not current
+		then "Roster unavailable"
+		elseif #current.units == 0 then "No units in your roster"
+		else "No units match these filters"
+	view.elementFilter.Text = element or "All elements"
+	view.rarityFilter.Text = rarity or "All rarities"
+	Controls.setEnabled(view.elementFilter, current ~= nil and not busy)
+	Controls.setEnabled(view.rarityFilter, current ~= nil and not busy)
+	TeamBoardView.setSynergies(view, TeamBoardDraft.synergies(if current then current.slots else {}, unitsByUid))
+
+	view.save.Text = if current then "Save team" else "Retry"
+	Controls.setEnabled(view.save, not busy and (current == nil or dirty))
+	Controls.setEnabled(view.play, not busy and deployed > 0)
+	Controls.setEnabled(view.back, backToMenu ~= nil and not busy)
 end
 
-local function showSelection(uid: string): ()
+local function selectUnit(uid: string): ()
+	if not canInteract() or not unitsByUid[uid] then
+		return
+	end
 	selectedUid = uid
-	status("Tap a slot to place or move. Tap the same slot to remove.")
+	view.boardScroll.CanvasPosition = Vector2.zero
+	status("Choose a slot. Select the same slot to remove the unit.")
+	refresh()
+	UIController.focus(view.cells[1])
+end
+
+local function placeUnit(uid: string, index: number): ()
+	local current = board
+	if not current or not canInteract() or not unitsByUid[uid] then
+		return
+	end
+	if not TeamBoardDraft.place(current.slots, uid, index, current.maxUnits) then
+		status("Team is full. Choose an occupied slot to replace a unit.", true)
+		return
+	end
+	selectedUid = nil
+	dirty = true
+	status("Unsaved changes.")
 	refresh()
 end
 
-local function showBoard(data: Board): ()
+local function showBoard(data: Types.TeamBoardData): ()
 	board = data
 	table.clear(unitsByUid)
 	for _, unit in data.units do
@@ -170,130 +124,190 @@ local function showBoard(data: Board): ()
 	end
 	for uid, card in cards do
 		if not unitsByUid[uid] then
-			card:Destroy()
+			card.button:Destroy()
 			cards[uid] = nil
 		end
 	end
 
-	view.roster.Text = if #data.units == 0 then "No units in your roster" else "Your units"
-	for index, unit in data.units do
+	for order, unit in data.units do
 		local uid = unit.uid
 		local card = cards[uid]
 		if not card then
-			card = Controls.button("", UDim2.new(1, 0, 0, Theme.cardHeight), view.scroll)
-			local stroke = Instance.new("UIStroke")
-			stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-			stroke.Color = Theme.rarity[unit.rarity] or Theme.border
-			stroke.Parent = card
-			card.Activated:Connect(function()
-				if not busy then
-					showSelection(uid)
-					view.scroll.CanvasPosition = Vector2.zero
-					UIController.focus(view.cells[1])
-				end
+			card = UnitCard.create(view.cards)
+			bindCard(card.button, function()
+				local current = unitsByUid[uid]
+				return if current then uid else nil, if current then current.name else nil
 			end)
 			cards[uid] = card
 		end
-		card.LayoutOrder = view.roster.LayoutOrder + index
+		card.button.LayoutOrder = order
 	end
 end
 
-local function sync(): ()
+local function runRequest(startBattle: boolean): ()
 	if busy then
 		return
 	end
 	local current = board
-	if current and not dirty then
+	if startBattle and (not current or TeamBoardDraft.count(current.slots) == 0) then
 		return
 	end
 
+	local snapshot = if current and dirty then table.clone(current.slots) else nil
 	busy = true
-	status(if current then "Saving team…" else "Loading team…")
+	status(
+		if snapshot then "Saving team…" elseif startBattle then "Starting practice battle…" else "Loading team…"
+	)
 	refresh()
 	local finished = false
-	task.delay(SLOW_REQUEST_SECONDS, function()
+	task.delay(SLOW_REQUEST, function()
 		if not finished then
-			status("Still waiting for the team server.")
+			status("Still waiting for the server.")
 		end
 	end)
-	local snapshot = if current then table.clone(current.slots) else nil
-	local result, failure = request(if snapshot then "SaveTeam" else "GetTeamBoard", snapshot)
+
+	local failure: string? = nil
+	if snapshot or not startBattle then
+		local data, message, code = TeamBoardRemote.load(snapshot)
+		failure = if data then nil else message or "Request failed. Try again."
+		if data then
+			showBoard(data)
+			dirty = false
+			selectedUid = nil
+		elseif code == "UNIT_NOT_OWNED" then
+			local refreshed = TeamBoardRemote.load()
+			if refreshed then
+				showBoard(refreshed)
+				dirty = false
+				selectedUid = nil
+				failure = "A unit is no longer owned. Your saved team was reloaded."
+			end
+		end
+	end
+	if startBattle and failure == nil then
+		status("Starting practice battle…")
+		local ok, message = TeamBoardRemote.startPractice()
+		if not ok then
+			failure = message or "Battle could not start. Try again."
+		end
+	end
 	finished = true
 	busy = false
-	if result then
-		showBoard(result)
-		dirty = false
-		selectedUid = nil
-		status(if current then "Team saved." else "Select a unit, then tap a slot.")
+	if failure then
+		status(failure, true)
+	elseif startBattle then
+		status("Practice battle · no rewards.")
+	elseif snapshot then
+		status("Team saved.")
 	else
-		status(failure or "Request failed. Try again.", true)
+		status("Select a unit, then choose a slot.")
 	end
 	refresh()
 	if view.screen.Enabled then
-		UIController.focus(if board then view.cells[1] else view.action)
+		UIController.focus(if board then view.cells[1] else view.save)
 	end
 end
 
-local function activateCell(index: number): ()
-	local current = board
-	if busy or not current then
+local function openFilter(filterElement: boolean): ()
+	if not canInteract() then
 		return
 	end
-	local target = current.slots[index]
-	local selected = selectedUid
-	if not selected then
-		if target ~= "" and unitsByUid[target] then
-			showSelection(target)
+	local choices: { Modal.Choice } = { { label = if filterElement then "All elements" else "All rarities" } }
+	for _, label in if filterElement then ELEMENTS else RARITIES do
+		table.insert(choices, { label = label, value = label })
+	end
+	local sheet: Modal.View
+	local restore: () -> ()
+	local function close(): ()
+		restore()
+		sheet.screen:Destroy()
+	end
+	sheet = Modal.create(
+		playerGui,
+		if filterElement then "Filter by element" else "Filter by rarity",
+		choices,
+		if filterElement then element else rarity,
+		function(choice)
+			if filterElement then
+				element = choice
+			else
+				rarity = choice
+			end
+			selectedUid = nil
+			close()
+			refresh()
+		end,
+		close
+	)
+	restore = UIController.overlay(sheet.screen, sheet.first)
+end
+
+local function wire(): ()
+	bindCard = TeamBoardDrag.mount(
+		playerGui,
+		view.screen,
+		view.boardScroll,
+		view.cells,
+		canInteract,
+		selectUnit,
+		function(uid, index)
+			local current = board
+			if current and current.slots[index] ~= uid then
+				placeUnit(uid, index)
+			end
 		end
-		return
-	end
+	)
 
-	local previous = table.find(current.slots, selected)
-	if previous == index then
-		current.slots[index] = ""
-	elseif previous then
-		current.slots[previous] = target
-		current.slots[index] = selected
-	elseif target ~= "" or occupiedCount(current.slots) < current.maxUnits then
-		current.slots[index] = selected
-	else
-		status("Team is full. Choose an occupied slot to replace a unit.", true)
-		return
+	for index, cell in view.cells do
+		cell.Activated:Connect(function()
+			local current = board
+			if not current or not canInteract() then
+				return
+			end
+			if selectedUid then
+				placeUnit(selectedUid, index)
+			elseif current.slots[index] ~= EMPTY then
+				selectUnit(current.slots[index])
+			end
+		end)
 	end
-
-	selectedUid = nil
-	dirty = true
-	status("Unsaved changes.")
-	refresh()
+	local function goBack(): ()
+		if backToMenu and not busy then
+			backToMenu()
+		end
+	end
+	view.back.Activated:Connect(goBack)
+	view.save.Activated:Connect(function()
+		runRequest(false)
+	end)
+	view.play.Activated:Connect(function()
+		runRequest(true)
+	end)
+	view.elementFilter.Activated:Connect(function()
+		openFilter(true)
+	end)
+	view.rarityFilter.Activated:Connect(function()
+		openFilter(false)
+	end)
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and view.screen.Enabled and input.KeyCode == Enum.KeyCode.ButtonB then
+			goBack()
+		end
+	end)
 end
 
 function TeamBoardController.open(onBack: (() -> ())?): ()
 	backToMenu = onBack
 	if not view then
-		view = TeamBoardView.create(Players.LocalPlayer:WaitForChild("PlayerGui"))
-		for index, cell in view.cells do
-			cell.Activated:Connect(function()
-				activateCell(index)
-			end)
-		end
-		local function goBack(): ()
-			if backToMenu then
-				backToMenu()
-			end
-		end
-		view.back.Activated:Connect(goBack)
-		view.action.Activated:Connect(sync)
-		UserInputService.InputBegan:Connect(function(input, processed)
-			if not processed and view.screen.Enabled and input.KeyCode == Enum.KeyCode.ButtonB then
-				goBack()
-			end
-		end)
+		playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
+		view = TeamBoardView.create(playerGui)
+		wire()
 	end
 	view.back.Visible = onBack ~= nil
 	refresh()
-	UIController.show(view.screen, if onBack then view.back else view.action)
-	if not board then
-		task.spawn(sync)
+	UIController.show(view.screen, if onBack then view.back elseif board then view.cells[1] else view.save)
+	if not dirty then
+		task.spawn(runRequest, false)
 	end
 end
 
