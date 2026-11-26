@@ -4,6 +4,7 @@ local Constants = require(script.Parent.Constants)
 local Lobby = require(script.Parent.Lobby)
 local Quests = require(script.Parent.Quests)
 local Raids = require(script.Parent.Raids)
+local Skins = require(script.Parent.Skins)
 local Units = require(script.Parent.Units)
 
 local MetaValidate = {}
@@ -56,6 +57,18 @@ function MetaValidate.run(): ()
 		checkRewards(tier.rewards, `Raids.tiers[{index}]`, false)
 	end
 
+	-- Setiap skin punya placeholder pajangan berbeda; tidak ada style untuk skin yang tidak ada.
+	local materials = { SmoothPlastic = true, Fabric = true, Glass = true, Neon = true, Metal = true, Marble = true }
+	for skinId in Skins do
+		assert(Lobby.skinBodyStyles[skinId], `Lobby.skinBodyStyles: missing style for {skinId}`)
+	end
+	for skinId, style in Lobby.skinBodyStyles do
+		assert(Skins[skinId], `Lobby.skinBodyStyles: unknown skin {skinId}`)
+		assert(materials[style.material], `Lobby.skinBodyStyles.{skinId}: unsupported material`)
+		assert(style.sizeScale.x > 0 and style.sizeScale.y > 0 and style.sizeScale.z > 0, `{skinId}: bad scale`)
+		assert(style.reflectance >= 0 and style.reflectance <= 1, `{skinId}: bad reflectance`)
+	end
+	assert(materials[Lobby.defaultBodyStyle.material], "Lobby.defaultBodyStyle: unsupported material")
 	for element, color in Lobby.elementColors do
 		assert(color.r and color.g and color.b, `Lobby.elementColors.{element}: bad color`)
 	end

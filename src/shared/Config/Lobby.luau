@@ -20,6 +20,26 @@ return TableUtil.deepFreeze({
 	rootWaitSeconds = 10,
 	-- Lobby & pajangan terbuka setelah onboarding (flags.tutorialDone).
 	requiresTutorialDone = true,
+	-- Tampilan placeholder Body default (tanpa skin): warna elemen, bentuk & material dasar.
+	defaultBodyStyle = { material = "SmoothPlastic", sizeScale = { x = 1, y = 1, z = 1 }, reflectance = 0 },
+	-- Placeholder ORIGINAL per skin sampai aset skin dipublikasikan (Config/Skins.assetId masih kosong).
+	-- Hanya properti Body (warna, material, skala ukuran, reflectance): topologi model tetap sama.
+	skinBodyStyles = {
+		-- Seragam akademi: biru tua bertekstur kain, sedikit lebih ramping & tinggi.
+		skin_academy_scholar = {
+			color = { r = 38, g = 62, b = 140 },
+			material = "Fabric",
+			sizeScale = { x = 0.9, y = 1.15, z = 0.9 },
+			reflectance = 0,
+		},
+		-- Jubah bintang musim 1: ungu-emas berkilau, lebih lebar.
+		skin_s1_starfall = {
+			color = { r = 186, g = 140, b = 255 },
+			material = "Glass",
+			sizeScale = { x = 1.2, y = 1.05, z = 1.2 },
+			reflectance = 0.35,
+		},
+	},
 	-- Warna placeholder Body per elemen (RGB).
 	elementColors = {
 		Api = { r = 235, g = 96, b = 64 },
