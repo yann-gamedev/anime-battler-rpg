@@ -2,6 +2,7 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local Economy = require(Shared.Config.Economy)
+local Progression = require(Shared.Config.Progression)
 local Units = require(Shared.Config.Units)
 local InventoryDetail = require(script.Parent.InventoryDetail)
 local Page = require(script.Parent.ProgressPage)
@@ -132,12 +133,22 @@ function InventoryView.render(
 	table.sort(selected)
 
 	if mode and state.confirm then
+		local mergeGold = if mode == "merge" and target and required then Progression.MERGE_GOLD[target.stars] else nil
+		local gold = snapshot.currencies.Gold
+		local canConfirm = #selected > 0
+			and (mode ~= "merge" or (#selected == required and mergeGold ~= nil and gold >= mergeGold))
 		Page.label(
 			body,
 			if mode == "merge" and target
 				then string.format("Upgrade %s to %d★?", Units[target.unitId].name, target.stars + 1)
 				else "Dismantle selected units?"
 		)
+		if mergeGold then
+			Page.label(body, string.format("Gold consumed: %d · Balance: %d", mergeGold, gold))
+			if gold < mergeGold then
+				Page.label(body, string.format("You need %d more Gold.", mergeGold - gold))
+			end
+		end
 		Page.label(body, "These units will be permanently removed.")
 		for _, uid in selected do
 			Page.label(body, InventoryDetail.describeUnit(snapshot.units[uid]) .. " · " .. uid)
@@ -147,7 +158,7 @@ function InventoryView.render(
 			refresh()
 		end)
 		local confirm = Page.button(body, if mode == "merge" then "Confirm merge" else "Confirm dismantle", function()
-			if #selected == 0 or (mode == "merge" and #selected ~= required) then
+			if not canConfirm then
 				return
 			end
 			if mode == "merge" and target then
@@ -156,7 +167,7 @@ function InventoryView.render(
 				onAction("DismantleUnit", selected)
 			end
 		end)
-		Controls.setEnabled(confirm, #selected > 0 and (mode ~= "merge" or #selected == required))
+		Controls.setEnabled(confirm, canConfirm)
 		return cancel
 	end
 

@@ -39,8 +39,15 @@ local errors: { [string]: string } = {
 	UNIT_NOT_OWNED = "A selected unit is no longer in your inventory.",
 	UNIT_LOCKED = "Unlock the selected unit before using it as material.",
 	UNIT_IN_TEAM = "Remove the selected unit from every saved team first.",
-	INSUFFICIENT_GOLD = "You need more Gold.",
-	INSUFFICIENT_XP_SCROLLS = "You need more XP Scrolls.",
+	NOT_ENOUGH_GOLD = "You need more Gold.",
+	NOT_ENOUGH_XP_SCROLLS = "You need more XP Scrolls.",
+	LEVEL_MAX = "This unit is already at maximum level.",
+	LEVEL_EXCEEDS_MAX = "This upgrade would exceed the maximum level.",
+	STARS_MAX = "This unit already has maximum stars.",
+	WRONG_MATERIAL_COUNT = "Choose the required number of duplicates.",
+	UNIT_MISMATCH = "Merge materials must match the target unit.",
+	UNIT_NOT_DISMANTLABLE = "This unit cannot be dismantled.",
+	TUTORIAL_NOT_DONE = "Finish onboarding before dismantling units.",
 }
 
 local function request(name: string, ...: any): (any, string?)
