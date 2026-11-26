@@ -52,6 +52,11 @@ local Constants = {
 		GetMyData = { max = 5, windowSec = 10 },
 		GetTeamBoard = { max = 10, windowSec = 10 },
 		SaveTeam = { max = 5, windowSec = 10 },
+		StartStage = { max = 1, windowSec = 3 },
+		LevelUpUnit = { max = 10, windowSec = 10 },
+		MergeUnit = { max = 5, windowSec = 10 },
+		DismantleUnit = { max = 5, windowSec = 10 },
+		LockUnit = { max = 10, windowSec = 10 },
 	} :: { [string]: RateLimitRule },
 
 	-- UserId admin untuk perintah debug (AdminService, belum dibuat).

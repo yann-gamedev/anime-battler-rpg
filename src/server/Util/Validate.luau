@@ -33,4 +33,31 @@ function Validate.isOneOf(allowed: { any }): (value: any) -> boolean
 	end
 end
 
+-- Array string dense tanpa metatable & tanpa kunci lain, jumlah minCount..maxCount,
+-- setiap string tidak kosong dan panjang <= maxLen. Iterasi berhenti segera setelah batas terlampaui.
+function Validate.isStringArray(value: any, minCount: number, maxCount: number, maxLen: number): boolean
+	if typeof(value) ~= "table" or getmetatable(value) ~= nil then
+		return false
+	end
+	local count = 0
+	for key, item in value do
+		count += 1
+		if count > maxCount or not Validate.isIntInRange(key, 1, maxCount) then
+			return false
+		end
+		if typeof(item) ~= "string" or item == "" or #item > maxLen then
+			return false
+		end
+	end
+	if count < minCount then
+		return false
+	end
+	for index = 1, count do
+		if value[index] == nil then
+			return false
+		end
+	end
+	return true
+end
+
 return table.freeze(Validate)

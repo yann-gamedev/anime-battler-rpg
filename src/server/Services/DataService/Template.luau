@@ -27,6 +27,9 @@ function Template.create(now: number): Types.Profile
 		stats = { battles = 0, wins = 0, summons = 0, robuxSpent = 0 },
 		flags = { tutorialDone = false },
 		createdAt = now,
+		-- Field additive v1 (prompt 06); profil lama dilengkapi Reconcile + Progress.reconcile.
+		materials = { XPScrolls = 0 },
+		progress = { tutorialBattleCleared = false, firstThreeStarClaimed = {}, replayDay = 0, replayCount = 0 },
 	}
 end
 

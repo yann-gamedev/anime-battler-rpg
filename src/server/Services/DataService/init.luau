@@ -18,6 +18,7 @@ local Replication = require(script.Replication)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local Migrations = require(script.Migrations)
+local Progress = require(script.Progress)
 local ProfileRules = require(script.ProfileRules)
 local Template = require(script.Template)
 
@@ -38,8 +39,10 @@ local LOAD_FAILED = "Data kamu gagal dimuat. Silakan masuk lagi sebentar lagi."
 local store = ProfileStore.New(if IS_STUDIO then "PlayerProfiles_Studio" else "PlayerProfiles_Live", Template.create(0))
 local DataService = {}
 
--- Changed(player, path): path = "units" | "currencies" | "teams".
+-- Changed(player, path): path = "units" | "currencies" | "teams" | "progress".
 DataService.Changed = Signal.new() :: Signal.Signal<Player, string>
+-- Mutasi progres story & inventory yang atomik (DataService/Progress.luau).
+DataService.progress = Progress
 
 local sessions: { [Player]: Session } = {}
 local loading: { [Player]: boolean } = {}
@@ -148,6 +151,7 @@ local function onPlayerAdded(player: Player): ()
 		if profile.teams[1] == nil then
 			profile.teams[1] = Template.create(0).teams[1]
 		end
+		Progress.reconcile(profile)
 		if profile.createdAt == 0 then
 			profile.createdAt = activeSession.FirstSessionTime
 			if next(profile.units) == nil then
@@ -185,6 +189,7 @@ end
 
 function DataService.init(): ()
 	Replication.bind(getProfile, DataService.Changed)
+	Progress.bind(getActiveSession, DataService.Changed)
 end
 
 function DataService.start(): ()

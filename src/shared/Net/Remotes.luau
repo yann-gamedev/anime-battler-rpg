@@ -12,6 +12,11 @@ local Remotes = {
 		"StartPracticeBattle",
 		"GetTeamBoard", -- () → Result<TeamBoardData>
 		"SaveTeam", -- (teamIndex: number, slots: { string }) → Result<TeamBoardData>
+		"StartStage", -- (stageId: string, teamIndex: number) → Result<StageResultData>
+		"LevelUpUnit", -- (uid: string, levels: number) → Result<MyData>
+		"MergeUnit", -- (targetUid: string, materialUids: { string }) → Result<MyData>
+		"DismantleUnit", -- (uids: { string }) → Result<MyData>
+		"LockUnit", -- (uid: string, locked: boolean) → Result<MyData>
 	},
 }
 

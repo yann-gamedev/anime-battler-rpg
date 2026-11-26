@@ -1,7 +1,10 @@
 --!strict
 local Types = require(script.Parent.Parent.Types)
 local Banners = require(script.Parent.Banners)
+local Constants = require(script.Parent.Constants)
 local Economy = require(script.Parent.Economy)
+local Progression = require(script.Parent.Progression)
+local Stages = require(script.Parent.Stages)
 local Synergies = require(script.Parent.Synergies)
 local Traits = require(script.Parent.Traits)
 local Ultimates = require(script.Parent.Ultimates)
@@ -72,6 +75,18 @@ function Validate.run(
 		total += def.oddsPercent
 	end
 	checkTotal(total, "Traits")
+
+	local previous = Constants.BOARD_UNITS_START
+	for _, unlock in Progression.BOARD_UNLOCKS do
+		assert(Stages.byId[unlock.stageId], `Progression: unknown board unlock stage {unlock.stageId}`)
+		assert(unlock.maxUnits > previous and unlock.maxUnits <= Constants.BOARD_UNITS_MAX, "Progression: bad unlock")
+		previous = unlock.maxUnits
+	end
+	assert(Stages.byId[Progression.ONBOARDING_FINAL_STAGE_ID], "Progression: unknown onboarding stage")
+	assert(#Progression.MERGE_GOLD == #Economy.mergeDuplicates, "Progression: merge Gold must match star steps")
+	for unitId, cell in Progression.TUTORIAL_STARTER_CELLS do
+		assert(unitDefs[unitId] and cell >= 1 and cell <= Constants.BOARD_SLOTS, `Progression: bad starter {unitId}`)
+	end
 end
 
 return table.freeze(Validate)
