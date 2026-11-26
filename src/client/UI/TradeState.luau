@@ -9,7 +9,8 @@ export type Offer = {
 
 export type View = {
 	sessionId: string,
-	revision: number,
+	updateId: number,
+	revision: number, -- Consent guard for SetReady and ConfirmTrade.
 	status: "Requested" | "Open" | "Ready" | "Countdown" | "Confirmed" | "Done" | "Cancelled",
 	initiatorUserId: number,
 	selfUserId: number,
@@ -42,7 +43,7 @@ function TradeState.apply(state: State, incoming: View, userId: number, now: num
 	end
 	local current = state.view
 	if current and current.sessionId == incoming.sessionId then
-		if TradeState.terminal(current) or incoming.revision <= current.revision then
+		if TradeState.terminal(current) or incoming.updateId <= current.updateId then
 			return false
 		end
 	elseif

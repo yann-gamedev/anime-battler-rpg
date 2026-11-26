@@ -18,6 +18,17 @@ local function rootOf(player: Player): BasePart?
 	return if root and root:IsA("BasePart") then root else nil
 end
 
+local function withinPlaza(plaza: BasePart, position: Vector3): boolean
+	local offset = plaza.CFrame:PointToObjectSpace(position)
+	local halfSize = plaza.Size / 2
+	local heightAboveFloor = offset.Y - halfSize.Y
+	local bounds = Config.plaza
+	return math.abs(offset.X) <= halfSize.X + bounds.horizontalMargin
+		and math.abs(offset.Z) <= halfSize.Z + bounds.horizontalMargin
+		and heightAboveFloor >= bounds.minHeight
+		and heightAboveFloor <= bounds.maxHeight
+end
+
 function TradePicker.peers(page: Page.Page, enabled: boolean, request: (number) -> ()): ()
 	local player = Players.LocalPlayer
 	local ownRoot = rootOf(player)
@@ -25,13 +36,13 @@ function TradePicker.peers(page: Page.Page, enabled: boolean, request: (number) 
 	local plaza = lobby and lobby:FindFirstChild(Config.plaza.partName)
 	Page.label(page.body, "Meet another player at the Trading Plaza to send a request.")
 	local count = 0
-	if plaza and plaza:IsA("BasePart") and ownRoot then
+	if plaza and plaza:IsA("BasePart") and ownRoot and withinPlaza(plaza, ownRoot.Position) then
 		for _, peer in Players:GetPlayers() do
 			local root = rootOf(peer)
 			if
 				peer ~= player
 				and root
-				and (root.Position - plaza.Position).Magnitude <= plaza.Size.Magnitude
+				and withinPlaza(plaza, root.Position)
 				and (root.Position - ownRoot.Position).Magnitude <= Config.plaza.maxPairDistance
 			then
 				count += 1
