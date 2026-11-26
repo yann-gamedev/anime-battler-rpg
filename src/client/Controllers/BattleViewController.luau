@@ -37,7 +37,7 @@ type Session = {
 	view: Hud.View,
 	result: Types.BattleResult,
 	restoreUI: () -> (),
-	onClosed: (() -> ())?,
+	onClosed: ((boolean) -> ())?,
 	connections: { RBXScriptConnection },
 	frame: RBXScriptConnection?,
 	clock: BattleReplay.Clock,
@@ -108,7 +108,7 @@ local function close(session: Session): ()
 		camera.CameraType = session.priorCamera.kind
 	end
 	if session.onClosed then
-		session.onClosed()
+		session.onClosed(session.ended)
 	end
 end
 
@@ -201,7 +201,7 @@ local function tick(session: Session, delta: number): ()
 	end
 end
 
-local function begin(result: Types.BattleResult, onClosed: (() -> ())?): boolean
+local function begin(result: Types.BattleResult, onClosed: ((boolean) -> ())?): boolean
 	if active and active.onClosed then
 		return false
 	end
@@ -218,8 +218,10 @@ local function begin(result: Types.BattleResult, onClosed: (() -> ())?): boolean
 		close(active)
 	end
 	local view = Hud.create(gui)
-	local allowDoubleSpeed = RunService:IsStudio()
-	Hud.enable(view.speed, allowDoubleSpeed)
+	local function canDoubleSpeed(): boolean
+		return RunService:IsStudio() or PLAYER:GetAttribute("PassSpeed2x") == true
+	end
+	local allowDoubleSpeed = canDoubleSpeed()
 	Hud.enable(view.skip, false)
 
 	local session: Session = {
@@ -256,8 +258,23 @@ local function begin(result: Types.BattleResult, onClosed: (() -> ())?): boolean
 		table.insert(session.connections, connection)
 	end
 
+	local function updateSpeedControl(): ()
+		local enabled = canDoubleSpeed() and not session.ended
+		Hud.enable(view.speed, enabled)
+		view.cinematic.NextSelectionLeft = if enabled then view.speed else view.skip
+		view.skip.NextSelectionUp = if enabled then view.speed else view.cinematic
+		if not enabled then
+			if GuiService.SelectedObject == view.speed then
+				UIController.focus(view.cinematic)
+			end
+			session.speed = 1
+			view.speed.Text = "Speed: 1×"
+		end
+	end
+	updateSpeedControl()
+	listen(PLAYER:GetAttributeChangedSignal("PassSpeed2x"):Connect(updateSpeedControl))
 	listen(view.speed.Activated:Connect(function()
-		if allowDoubleSpeed and not session.ended then
+		if canDoubleSpeed() and not session.ended then
 			session.speed = if session.speed == 1 then 2 else 1
 			view.speed.Text = if session.speed == 2 then "Speed: 2×" else "Speed: 1×"
 		end
@@ -308,12 +325,12 @@ local function begin(result: Types.BattleResult, onClosed: (() -> ())?): boolean
 	return true
 end
 
-function BattleViewController.playStory(result: Types.BattleResult, onClosed: () -> ()): ()
+function BattleViewController.playStory(result: Types.BattleResult, onClosed: (boolean) -> ()): ()
 	local delivered = false
-	local function deliver()
+	local function deliver(completed: boolean)
 		if not delivered then
 			delivered = true
-			task.defer(onClosed)
+			task.defer(onClosed, completed)
 		end
 	end
 	local ok, started = pcall(begin, result, deliver)
@@ -324,7 +341,7 @@ function BattleViewController.playStory(result: Types.BattleResult, onClosed: ()
 		end
 	end
 	if not ok or not started then
-		deliver()
+		deliver(false)
 	end
 end
 

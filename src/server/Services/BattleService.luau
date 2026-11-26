@@ -12,7 +12,6 @@ local BattleArena = require(Shared.Config.BattleArena)
 local BattleSim = require(Shared.BattleSim)
 local TeamRules = require(Shared.TeamRules)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
-local Validate = require(script.Parent.Parent.Util.Validate)
 local DataService = require(script.Parent.DataService)
 local TeamService = require(script.Parent.TeamService)
 
@@ -77,7 +76,7 @@ end
 function BattleService.init(): ()
 	local replay = RemoteSetup.getEvent("BattleResult")
 	local function startSavedBattle(player: Player, teamId: any, testBattle: boolean): Types.Result
-		if not Validate.isIntInRange(teamId, 1, Constants.TEAM_PRESETS_BASE) then
+		if not TeamService.isTeamIndexAllowed(player, teamId) then
 			return { ok = false, code = "INVALID_TEAM_ID" }
 		end
 		local arena = Workspace:FindFirstChild(BattleArena.modelName)
@@ -89,9 +88,10 @@ function BattleService.init(): ()
 		if not profile then
 			return { ok = false, code = "DATA_NOT_READY" }
 		end
+		-- Preset tambahan yang belum pernah disimpan = tim kosong.
 		local team = profile.teams[teamId]
 		if not team then
-			return { ok = false, code = "INVALID_TEAM_ID" }
+			return { ok = false, code = "EMPTY_TEAM" }
 		end
 		local enemy = if testBattle then TestBattle else Stages.chapters[1][1]
 		local maxUnits = if testBattle then Constants.BOARD_UNITS_MAX else TeamService.getMaxBoardUnits(profile)

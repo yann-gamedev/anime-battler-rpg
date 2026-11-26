@@ -1,5 +1,6 @@
 --!strict
--- StageService: remote StartStage (prompts/06-story-progression.md).
+-- StageService: remote StartStage (prompts/06-story-progression.md) dan StartAutoReplay (prompt 09:
+-- hanya pemilik gp_autoreplay menurut cache server, hanya stage yang sudah 3★ di profil server).
 -- Server memilih tim (preset tersimpan), menjalankan BattleService, menghitung bintang, lalu
 -- DataService.progress meng-commit reward & progres secara atomik. Replay hanya lewat respons.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -7,13 +8,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Types = require(Shared.Types)
 local Constants = require(Shared.Config.Constants)
+local Products = require(Shared.Config.Products)
 local Progression = require(Shared.Config.Progression)
 local ProgressionRules = require(Shared.ProgressionRules)
 local TeamRules = require(Shared.TeamRules)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
+local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
 local BattleService = require(script.Parent.BattleService)
+local BattlePassService = require(script.Parent.BattlePassService)
 local DataService = require(script.Parent.DataService)
+local MonetizationService = require(script.Parent.MonetizationService)
+local TeamService = require(script.Parent.TeamService)
 
 -- "tutorial" dan "N-NN" muat; ID lain ditolak sebelum lookup.
 local isStageIdString = Validate.isStringMax(16)
@@ -57,7 +63,7 @@ function StageService.tutorialStarterSlots(profile: Types.Profile): { string }?
 	return if placed > 0 then slots else nil
 end
 
-local function handleStartStage(player: Player, stageId: any, teamIndex: any, ...: any): Types.Result
+local function runStage(player: Player, autoReplay: boolean, stageId: any, teamIndex: any, ...: any): Types.Result
 	if select("#", ...) ~= 0 then
 		return failure("INVALID_ARGUMENTS")
 	end
@@ -68,8 +74,11 @@ local function handleStartStage(player: Player, stageId: any, teamIndex: any, ..
 	if not stage then
 		return failure("INVALID_STAGE")
 	end
-	if not Validate.isIntInRange(teamIndex, 1, Constants.TEAM_PRESETS_BASE) then
+	if not TeamService.isTeamIndexAllowed(player, teamIndex) then
 		return failure("INVALID_TEAM_INDEX")
+	end
+	if autoReplay and not MonetizationService.hasPass(player, "gp_autoreplay") then
+		return failure("PASS_REQUIRED")
 	end
 	local profile = DataService.getProfile(player)
 	if not profile then
@@ -78,12 +87,12 @@ local function handleStartStage(player: Player, stageId: any, teamIndex: any, ..
 	if not ProgressionRules.isStageUnlocked(profile.story.cleared, profile.progress.tutorialBattleCleared, stageId) then
 		return failure("STAGE_LOCKED")
 	end
-	local team = profile.teams[teamIndex]
-	if not team then
-		return failure("INVALID_TEAM_INDEX")
+	if autoReplay and profile.story.cleared[stageId] ~= Products.autoReplayRequiredStars then
+		return failure("STAGE_NOT_THREE_STAR")
 	end
-
-	local slots = team.slots
+	-- Preset tambahan yang belum pernah disimpan = tim kosong.
+	local team = profile.teams[teamIndex]
+	local slots = if team then team.slots else table.create(Constants.BOARD_SLOTS, TeamRules.EMPTY_SLOT)
 	if ProgressionRules.isTutorial(stageId) and isEmptyTeam(slots) then
 		local starters = StageService.tutorialStarterSlots(profile)
 		if not starters then
@@ -92,6 +101,11 @@ local function handleStartStage(player: Player, stageId: any, teamIndex: any, ..
 		slots = starters
 	end
 
+	-- Batas bersama StartStage + StartAutoReplay agar dua remote tidak menggandakan laju battle.
+	local rule = Constants.RATE_LIMITS.StartStage
+	if not RateLimiter.allow(player, "StageBattle", rule.max, rule.windowSec) then
+		return failure("RATE_LIMITED")
+	end
 	-- BattleService memvalidasi kepemilikan, duplikat, dan batas slot dari progres server.
 	local result, battleCode = BattleService.runPve(player, slots, stage)
 	if not result then
@@ -101,6 +115,10 @@ local function handleStartStage(player: Player, stageId: any, teamIndex: any, ..
 	local code, outcome = DataService.progress.applyStageResult(player, stageId, stars)
 	if code or not outcome then
 		return failure(code or "INTERNAL_ERROR")
+	end
+	if stars > 0 and not ProgressionRules.isTutorial(stageId) then
+		-- Commit terpisah: kegagalan XP (mis. di luar musim) tidak membatalkan hasil stage.
+		BattlePassService.awardStoryWin(player)
 	end
 	local progression = DataService.progress.getProgression(player)
 	if not progression then
@@ -118,7 +136,12 @@ local function handleStartStage(player: Player, stageId: any, teamIndex: any, ..
 end
 
 function StageService.init(): ()
-	RemoteSetup.bindFunction("StartStage", handleStartStage)
+	RemoteSetup.bindFunction("StartStage", function(player: Player, ...: any): Types.Result
+		return runStage(player, false, ...)
+	end)
+	RemoteSetup.bindFunction("StartAutoReplay", function(player: Player, ...: any): Types.Result
+		return runStage(player, true, ...)
+	end)
 end
 
 function StageService.start(): () end

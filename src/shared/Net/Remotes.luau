@@ -10,9 +10,10 @@ local Remotes = {
 		"GetMyData",
 		"StartTestBattle",
 		"StartPracticeBattle",
-		"GetTeamBoard", -- () → Result<TeamBoardData>
+		"GetTeamBoard", -- (teamIndex: number?) → Result<TeamBoardData>; default 1
 		"SaveTeam", -- (teamIndex: number, slots: { string }) → Result<TeamBoardData>
 		"StartStage", -- (stageId: string, teamIndex: number) → Result<StageResultData>
+		"StartAutoReplay", -- (stageId: string, teamIndex: number) → Result<StageResultData>; gp_autoreplay + 3★
 		"LevelUpUnit", -- (uid: string, levels: number) → Result<MyData>
 		"MergeUnit", -- (targetUid: string, materialUids: { string }) → Result<MyData>
 		"DismantleUnit", -- (uids: { string }) → Result<MyData>
@@ -22,6 +23,11 @@ local Remotes = {
 		"GetTraitInfo", -- (uid: string) → Result<TraitInfo>
 		"RerollTrait", -- (uid: string) → Result<TraitRerollData>
 		"SelectRestrictedTrait", -- (uid: string, traitId: string) → Result<TraitRerollData>
+		"GetShopInfo", -- () → Result<ShopInfo>
+		"PrepareShopPurchase", -- (productKey: string) → Result<PreparedPurchase>; tidak pernah memberi reward
+		"BuyAcademyItem", -- (itemId: string) → Result<ShopInfo>
+		"GetBattlePass", -- () → Result<PassInfo>
+		"ClaimBattlePassTier", -- (track: "Free" | "Premium", tier: number, unitId: string?) → Result<PassInfo>
 	},
 }
 

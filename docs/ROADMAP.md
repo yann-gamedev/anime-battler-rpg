@@ -30,7 +30,8 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
   - Build, 66 tes Luau, dan uji integrasi dengan mock lulus. Verifikasi PolicyService asli dan UI di Roblox Studio masih tertunda.
 - [ ] Trait & reroll + pity trait → `prompts/08-traits.md`
   - Jalur restricted sudah diputuskan di D-025. Uji UI dan PolicyService asli di Roblox Studio masih tertunda.
-- [ ] Developer products, gamepass, ProcessReceipt idempoten, toko langsung → `prompts/09-monetization.md`
+- [x] Developer products, gamepass, ProcessReceipt idempoten, toko langsung → `prompts/09-monetization.md`
+  - Implementasi, review keamanan terfokus, build, dan tes Luau lokal lulus. Uji transaksi Roblox, simpan/muat ulang profil, dan navigasi perangkat di Studio masih tertunda.
 
 ## M5 — Lobby & siap soft launch
 - [ ] Lobby sosial, pajangan unit, quest harian/mingguan, boss raid, analytics → `prompts/10-lobby-quests.md`

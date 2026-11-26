@@ -267,6 +267,14 @@ Di place uji yang dipublikasikan, buka Summon lewat Play atau hadiah onboarding,
 
 Uji di place Studio yang dipublikasikan. Buka Inventory → detail unit, periksa odds dan konfirmasi sebelum mengganti trait Epic atau lebih tinggi. Paksa status restricted lewat `ComplianceService.adminForceRestricted` dari Server Command Bar. Pastikan pilihan Gold menampilkan biaya dan trait tujuan, lalu cek hasil dan saldo setelah konfirmasi. Lepaskan override untuk memeriksa kebijakan asli.
 
+### Monetisasi dan Battle Pass
+
+`MonetizationService` memasang satu callback `MarketplaceService.ProcessReceipt`. DataService menyimpan grant, bonus awal per paket Gems, statistik belanja, dan marker `PurchaseId` bersama. Callback mengembalikan `PurchaseGranted` setelah marker muncul di `LastSavedData`. `GetShopInfo` dan `PrepareShopPurchase(productKey)` mengirim data untuk tombol pembelian. `BuyAcademyItem(itemId)` memakai harga Gems dari katalog server dan berlaku juga untuk pemain restricted.
+
+`GetBattlePass()` mengirim progres musim dan hak pemain. `ClaimBattlePassTier(track, tier, unitId?)` memeriksa XP, Premium, dan kelayakan hadiah di server. Kemenangan story menambah XP musim. Implementasi quest pada prompt 10 memanggil `BattlePassService.grantQuestXp(player, questId, amount)` dari server setelah klaim quest berhasil. Bingkai profil yang telah diklaim disimpan di profil dan tampil di halaman Battle Pass.
+
+Di place Studio pengujian, jalankan suite dengan `Workspace.RunTests`, lalu buka Toko Akademi dengan override restricted. Beli unit dan skin, cek saldo dan kepemilikan, lalu ulangi setelah rejoin. Uji kontrol gamepass dengan UserId admin melalui `MonetizationService.adminSetPass(player, key, owned)` dari Server Command Bar. Verifikasi auto-replay pada stage 3★, kontrol 2×, slot preset, serta aura. Gunakan Developer Product dan GamePass khusus pengujian untuk memeriksa prompt, receipt, bonus Gems pertama, dan klaim Premium. ID produksi tetap 0 sampai pemilik place mengonfigurasinya.
+
 ## 7. Studio build scripts (`studio/`)
 
 - Dipakai untuk membangun **hierarki instance** (layout UI, lobby placeholder) sekali jalan.

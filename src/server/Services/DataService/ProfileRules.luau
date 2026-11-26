@@ -7,7 +7,7 @@ local Validate = require(script.Parent.Parent.Parent.Util.Validate)
 
 -- Lua numbers can represent every integer exactly only up to this limit.
 local MAX_EXACT_INTEGER = 2 ^ 53 - 1
-local isUnitSource = Validate.isOneOf({ "summon", "story", "trade", "event", "admin" })
+local isUnitSource = Validate.isOneOf({ "summon", "story", "trade", "event", "admin", "shop", "battlepass" })
 local isCurrencyKind = Validate.isOneOf({ "Gold", "Gems", "TraitShards", "SummonTickets", "AsramaTokens" })
 local traitIds: { [string]: boolean } = {}
 for _, tier in Traits.tiers do

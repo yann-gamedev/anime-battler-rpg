@@ -6,7 +6,6 @@ local Units = require(Shared.Config.Units)
 local Constants = require(Shared.Config.Constants)
 local Types = require(Shared.Types)
 local TIMEOUT = 4
-local TEAM_INDEX = 1
 
 local errors: { [string]: string } = {
 	DATA_NOT_READY = "Your profile is still loading. Try again in a moment.",
@@ -36,12 +35,14 @@ local function request(name: string, ...: any): (Types.Result?, string?, string?
 	return response, nil
 end
 
-function TeamBoardRemote.load(slots: { string }?): (Types.TeamBoardData?, string?, string?)
+function TeamBoardRemote.load(teamIndex: number, slots: { string }?): (Types.TeamBoardData?, string?, string?)
 	local response, failure, code
 	if slots then
-		response, failure, code = request("SaveTeam", TEAM_INDEX, slots)
-	else
+		response, failure, code = request("SaveTeam", teamIndex, slots)
+	elseif teamIndex == 1 then
 		response, failure, code = request("GetTeamBoard")
+	else
+		response, failure, code = request("GetTeamBoard", teamIndex)
 	end
 	if not response then
 		return nil, failure, code
@@ -79,8 +80,8 @@ function TeamBoardRemote.load(slots: { string }?): (Types.TeamBoardData?, string
 	return data, nil
 end
 
-function TeamBoardRemote.startPractice(): (boolean, string?)
-	local response, failure = request("StartPracticeBattle", TEAM_INDEX)
+function TeamBoardRemote.startPractice(teamIndex: number): (boolean, string?)
+	local response, failure = request("StartPracticeBattle", teamIndex)
 	return response ~= nil, failure
 end
 

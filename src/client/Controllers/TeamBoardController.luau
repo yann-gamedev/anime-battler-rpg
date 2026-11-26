@@ -34,17 +34,29 @@ local rarity: string?
 local backToMenu: (() -> ())?
 local busy = false
 local dirty = false
+local teamIndex = 1
+local player = Players.LocalPlayer
+
+local function presetCount(): number
+	local extra = player:GetAttribute("PassExtraPresets")
+	return 1 + (if type(extra) == "number" then math.max(0, math.floor(extra)) else 0)
+end
+
+function TeamBoardController.selectedIndex(): number
+	return if teamIndex <= presetCount() then teamIndex else 1
+end
 
 local function status(message: string, isError: boolean?): ()
 	Toast.show(view.status, message, isError)
 end
 
 local function canInteract(): boolean
-	return board ~= nil and not busy and view.screen.Enabled
+	return board ~= nil and not busy and view.screen.Enabled and teamIndex <= presetCount()
 end
 
 local function refresh(): ()
 	local current = board
+	local available = teamIndex <= presetCount()
 	local deployed = if current then TeamBoardDraft.count(current.slots) else 0
 	view.count.Text = if current
 		then string.format("Front row at top  ·  %d/%d deployed", deployed, current.maxUnits)
@@ -55,7 +67,7 @@ local function refresh(): ()
 		local unit = unitsByUid[uid]
 		cell.Text = if unit then unit.name else "Empty"
 		cell.BackgroundColor3 = if uid == selectedUid then Theme.accent else Theme.button
-		Controls.setEnabled(cell, current ~= nil and not busy)
+		Controls.setEnabled(cell, current ~= nil and not busy and available)
 		if uid ~= EMPTY then
 			placed[uid] = index
 		end
@@ -64,11 +76,11 @@ local function refresh(): ()
 	local visible = 0
 	for uid, card in cards do
 		local unit = unitsByUid[uid]
-		local matches = TeamBoardDraft.matches(unit, element, rarity)
+		local matches = current ~= nil and TeamBoardDraft.matches(unit, element, rarity)
 		card.button.Visible = matches
 		if matches then
 			visible += 1
-			UnitCard.update(card, unit, placed[uid], selectedUid == uid, not busy)
+			UnitCard.update(card, unit, placed[uid], selectedUid == uid, not busy and available)
 		else
 			Controls.setEnabled(card.button, false)
 		end
@@ -80,13 +92,15 @@ local function refresh(): ()
 		else "No units match these filters"
 	view.elementFilter.Text = element or "All elements"
 	view.rarityFilter.Text = rarity or "All rarities"
-	Controls.setEnabled(view.elementFilter, current ~= nil and not busy)
-	Controls.setEnabled(view.rarityFilter, current ~= nil and not busy)
+	Controls.setEnabled(view.elementFilter, current ~= nil and not busy and available)
+	Controls.setEnabled(view.rarityFilter, current ~= nil and not busy and available)
 	TeamBoardView.setSynergies(view, TeamBoardDraft.synergies(if current then current.slots else {}, unitsByUid))
 
+	view.preset.Text = if available then "Preset " .. teamIndex else "Preset " .. teamIndex .. " unavailable"
+	Controls.setEnabled(view.preset, not busy and (presetCount() > 1 or not available))
 	view.save.Text = if current then "Save team" else "Retry"
-	Controls.setEnabled(view.save, not busy and (current == nil or dirty))
-	Controls.setEnabled(view.play, not busy and deployed > 0)
+	Controls.setEnabled(view.save, not busy and available and (current == nil or dirty))
+	Controls.setEnabled(view.play, not busy and available and deployed > 0)
 	Controls.setEnabled(view.back, backToMenu ~= nil and not busy)
 end
 
@@ -145,7 +159,7 @@ local function showBoard(data: Types.TeamBoardData): ()
 end
 
 local function runRequest(startBattle: boolean): ()
-	if busy then
+	if busy or teamIndex > presetCount() then
 		return
 	end
 	local current = board
@@ -168,14 +182,14 @@ local function runRequest(startBattle: boolean): ()
 
 	local failure: string? = nil
 	if snapshot or not startBattle then
-		local data, message, code = TeamBoardRemote.load(snapshot)
+		local data, message, code = TeamBoardRemote.load(teamIndex, snapshot)
 		failure = if data then nil else message or "Request failed. Try again."
 		if data then
 			showBoard(data)
 			dirty = false
 			selectedUid = nil
 		elseif code == "UNIT_NOT_OWNED" then
-			local refreshed = TeamBoardRemote.load()
+			local refreshed = TeamBoardRemote.load(teamIndex)
 			if refreshed then
 				showBoard(refreshed)
 				dirty = false
@@ -186,7 +200,7 @@ local function runRequest(startBattle: boolean): ()
 	end
 	if startBattle and failure == nil then
 		status("Starting practice battle…")
-		local ok, message = TeamBoardRemote.startPractice()
+		local ok, message = TeamBoardRemote.startPractice(teamIndex)
 		if not ok then
 			failure = message or "Battle could not start. Try again."
 		end
@@ -242,6 +256,48 @@ local function openFilter(filterElement: boolean): ()
 	restore = UIController.overlay(sheet.screen, sheet.first)
 end
 
+local function openPresets(): ()
+	if busy or not view.screen.Enabled then
+		return
+	end
+	local choices: { Modal.Choice } = {}
+	for index = 1, presetCount() do
+		table.insert(choices, { label = "Load preset " .. index, value = tostring(index) })
+	end
+	local sheet: Modal.View
+	local restore: () -> ()
+	local function close()
+		restore()
+		sheet.screen:Destroy()
+	end
+	sheet = Modal.create(
+		playerGui,
+		if dirty then "Unsaved team changes" else "Choose a preset",
+		choices,
+		tostring(teamIndex),
+		function(value)
+			local index = tonumber(value)
+			close()
+			if not index or index == teamIndex or index > presetCount() then
+				return
+			end
+			teamIndex = index
+			dirty = false
+			selectedUid = nil
+			board = nil
+			runRequest(false)
+		end,
+		close,
+		{
+			body = if dirty
+				then { "Loading a different preset discards this draft. Cancel to keep editing or save first." }
+				else {},
+			closeText = "Cancel",
+		}
+	)
+	restore = UIController.overlay(sheet.screen, sheet.first)
+end
+
 local function wire(): ()
 	bindCard = TeamBoardDrag.mount(
 		playerGui,
@@ -277,6 +333,8 @@ local function wire(): ()
 		end
 	end
 	view.back.Activated:Connect(goBack)
+	view.preset.Activated:Connect(openPresets)
+	player:GetAttributeChangedSignal("PassExtraPresets"):Connect(refresh)
 	view.save.Activated:Connect(function()
 		runRequest(false)
 	end)
@@ -307,6 +365,10 @@ function TeamBoardController.open(onBack: (() -> ())?): ()
 	refresh()
 	UIController.show(view.screen, if onBack then view.back elseif board then view.cells[1] else view.save)
 	if not dirty then
+		if teamIndex > presetCount() then
+			teamIndex = 1
+			board = nil
+		end
 		task.spawn(runRequest, false)
 	end
 end

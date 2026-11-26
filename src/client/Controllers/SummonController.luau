@@ -3,9 +3,9 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local UI = script.Parent.Parent.UI
 local UIController = require(script.Parent.UIController)
+local MonetizationController = require(script.Parent.MonetizationController)
 local Page = require(UI.ProgressPage)
 local Controls = require(UI.Components.Controls)
-local Modal = require(UI.Components.Modal)
 local Theme = require(UI.Theme)
 local Remote = require(UI.SummonRemote)
 local View = require(UI.SummonView)
@@ -133,18 +133,11 @@ local function shop(): ()
 	if busy or not page.screen.Enabled then
 		return
 	end
-	local modal: Modal.View
-	local restore: () -> ()
-	modal = Modal.create(parent, "Academy Shop", {}, nil, function() end, function()
-		restore()
-		modal.screen:Destroy()
-		-- The schedule may have changed while the shop was open.
+	stopWatching()
+	MonetizationController.openShop(function()
+		UIController.show(page.screen)
 		refresh()
-	end, {
-		body = { "Direct purchases will be available in a future update." },
-		closeText = "Back to summon",
-	})
-	restore = UIController.overlay(modal.screen, modal.first)
+	end)
 end
 
 local function backToBanner(): ()

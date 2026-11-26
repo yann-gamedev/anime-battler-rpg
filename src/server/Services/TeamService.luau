@@ -9,14 +9,14 @@ local Constants = require(Shared.Config.Constants)
 local Units = require(Shared.Config.Units)
 local TeamRules = require(Shared.TeamRules)
 local ProgressionRules = require(Shared.ProgressionRules)
-local Validate = require(script.Parent.Parent.Util.Validate)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
 local DataService = require(script.Parent.DataService)
+local MonetizationService = require(script.Parent.MonetizationService)
 
 local TeamService = {}
 
--- Irisan ini hanya memakai preset tim pertama.
-local ACTIVE_TEAM_INDEX = 1
+-- Preset default untuk GetTeamBoard tanpa argumen (kompatibel dengan client lama).
+local DEFAULT_TEAM_INDEX = 1
 
 local function failure(code: string): Types.Result
 	return { ok = false, code = code }
@@ -25,6 +25,16 @@ end
 -- Batas unit di papan. Akan naik lewat progres story (GDD §6), BUKAN pembelian.
 function TeamService.getMaxBoardUnits(profile: Types.Profile): number
 	return ProgressionRules.maxBoardUnits(profile.story.cleared)
+end
+
+-- Indeks preset tertinggi untuk pemain ini: dasar + preset gamepass gp_presets (otoritas cache server).
+function TeamService.maxTeamIndex(player: Player): number
+	return Constants.TEAM_PRESETS_BASE + MonetizationService.extraPresets(player)
+end
+
+-- Validasi indeks preset dari client (integer 1..maxTeamIndex).
+function TeamService.isTeamIndexAllowed(player: Player, teamIndex: any): boolean
+	return TeamRules.isTeamIndex(teamIndex, MonetizationService.extraPresets(player))
 end
 
 local function buildBoardData(profile: Types.Profile, teamIndex: number): Types.TeamBoardData
@@ -66,22 +76,23 @@ local function buildBoardData(profile: Types.Profile, teamIndex: number): Types.
 	return { slots = slots, units = units, maxUnits = TeamService.getMaxBoardUnits(profile) }
 end
 
-local function handleGetTeamBoard(player: Player, ...: any): Types.Result
+local function handleGetTeamBoard(player: Player, teamIndex: any, ...: any): Types.Result
 	if select("#", ...) ~= 0 then
 		return failure("INVALID_ARGUMENTS")
+	end
+	local index = if teamIndex == nil then DEFAULT_TEAM_INDEX else teamIndex
+	if not TeamService.isTeamIndexAllowed(player, index) then
+		return failure("INVALID_TEAM_INDEX")
 	end
 	local profile = DataService.getProfile(player)
 	if not profile then
 		return failure("DATA_NOT_READY")
 	end
-	return { ok = true, data = buildBoardData(profile, ACTIVE_TEAM_INDEX) }
+	return { ok = true, data = buildBoardData(profile, index) }
 end
 
 local function handleSaveTeam(player: Player, teamIndex: any, slots: any, ...: any): Types.Result
-	if
-		not Validate.isIntInRange(teamIndex, ACTIVE_TEAM_INDEX, Constants.TEAM_PRESETS_BASE)
-		or select("#", ...) ~= 0
-	then
+	if not TeamService.isTeamIndexAllowed(player, teamIndex) or select("#", ...) ~= 0 then
 		return failure("INVALID_TEAM_INDEX")
 	end
 	local profile = DataService.getProfile(player)
