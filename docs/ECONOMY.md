@@ -6,7 +6,7 @@
 
 | Mata uang | Sumber | Dipakai untuk | Bisa dibeli Robux? | Bisa di-trade? |
 |---|---|---|---|---|
-| **Gold** | Stage, raid, jual unit | Level up, pajak trade, merge | Tidak | Tidak |
+| **Gold** | Stage, raid, jual unit | Level up, pajak trade, merge, pilih trait Biasa/Langka bagi pemain restricted | Tidak | Tidak |
 | **Gems** | Quest, first clear, login, event, **Robux** | Summon, battle pass tier skip | Ya | **Tidak** |
 | **Trait Shards** | Raid, quest mingguan, bongkar unit Epic+, **Robux** | Reroll trait | Ya | Tidak |
 | **Summon Tickets** | Tutorial, event, milestone story (**tidak pernah dijual**) | 1 tiket = 1Ã— summon | Tidak | Tidak |
@@ -49,7 +49,7 @@ UI wajib menampilkan peluang **per rarity dan per unit** (contoh: Mythic 0.5% â†
   - **Summon dengan Gems diblok seluruhnya** (Gems bisa dibeli Robux, jadi summon Gems = item acak berbayar walau Gems-nya didapat gratis). Tombol disembunyikan, server menolak.
   - **Reroll trait dengan Trait Shards diblok** dengan alasan yang sama.
   - Summon memakai **Tiket Summon Gratis** (hanya dari gameplay, tidak pernah dijual) tetap boleh.
-  - Pengganti reroll trait untuk pemain ini masih **keputusan terbuka** (lihat DECISIONS D-OPEN-1).
+  - Pemain restricted dapat memilih trait Biasa/Langka dengan Gold di detail unit. Biaya tetap dibaca dari `Config/Traits.luau` (D-025).
   - Verifikasi interpretasi ini dengan dokumen kebijakan Roblox terbaru sebelum rilis.
 
 ## 3. Pendapatan Gems pemain gratis (target)

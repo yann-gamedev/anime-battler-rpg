@@ -261,6 +261,12 @@ Di place uji dengan API Services aktif, mulai dari profil baru melalui Play → 
 
 Di place uji yang dipublikasikan, buka Summon lewat Play atau hadiah onboarding, lalu periksa odds 1× dan semua posisi 10×. Untuk menguji pembatasan, masukkan UserId penguji ke `Constants.ADMIN_USER_IDS` dan gunakan **Server** Command Bar. Jalankan `require(game:GetService("ServerScriptService").Server.Services.ComplianceService).adminForceRestricted(player, true)` dengan `player` dari sesi uji. Uji bahwa UI menyembunyikan opsi Gems, server menolak request Gems, dan tiket gameplay bisa dipakai. Gunakan argumen `false` untuk melepas override dan memeriksa hasil kebijakan asli.
 
+### Trait dan pilihan Gold
+
+`GetTraitInfo(uid)` mengirim trait, biaya, pity, dan peluang aktual per tier dan per trait. `RerollTrait(uid)` menjalankan roll di server dan memakai peluang serta trait yang terakhir dikirim. Untuk pemain restricted, `SelectRestrictedTrait(uid, traitId)` memasang hasil pilihan Biasa atau Langka dengan biaya Gold tetap. Server memvalidasi policy, kepemilikan, status lock, dan saldo ketika transaksi dikomit.
+
+Uji di place Studio yang dipublikasikan. Buka Inventory → detail unit, periksa odds dan konfirmasi sebelum mengganti trait Epic atau lebih tinggi. Paksa status restricted lewat `ComplianceService.adminForceRestricted` dari Server Command Bar. Pastikan pilihan Gold menampilkan biaya dan trait tujuan, lalu cek hasil dan saldo setelah konfirmasi. Lepaskan override untuk memeriksa kebijakan asli.
+
 ## 7. Studio build scripts (`studio/`)
 
 - Dipakai untuk membangun **hierarki instance** (layout UI, lobby placeholder) sekali jalan.

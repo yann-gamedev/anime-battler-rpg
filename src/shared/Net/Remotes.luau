@@ -19,6 +19,9 @@ local Remotes = {
 		"LockUnit", -- (uid: string, locked: boolean) → Result<MyData>
 		"GetBannerInfo", -- () → Result<BannerInfo>
 		"Summon", -- (bannerId: string, count: 1 | 10, payWith: "Gems" | "Tickets") → Result<SummonResultData>
+		"GetTraitInfo", -- (uid: string) → Result<TraitInfo>
+		"RerollTrait", -- (uid: string) → Result<TraitRerollData>
+		"SelectRestrictedTrait", -- (uid: string, traitId: string) → Result<TraitRerollData>
 	},
 }
 

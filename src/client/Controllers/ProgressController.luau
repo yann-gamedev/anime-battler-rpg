@@ -12,6 +12,8 @@ local Page = require(UI.ProgressPage)
 local Remote = require(UI.ProgressRemote)
 local StoryView = require(UI.StoryView)
 local InventoryView = require(UI.InventoryView)
+local TraitRemote = require(UI.TraitRemote)
+local TraitView = require(UI.TraitView)
 local Controls = require(UI.Components.Controls)
 local Modal = require(UI.Components.Modal)
 
@@ -21,6 +23,7 @@ type Route = "hub" | "story" | "inventory"
 local ProgressController = {}
 local pages: { [Route]: Page.Page } = {}
 local inventory = InventoryView.new()
+local trait = TraitView.new()
 local route: Route = "hub"
 local parent: PlayerGui
 local onBack: (() -> ())?
@@ -32,6 +35,20 @@ local storyScroll = Vector2.zero
 local focusStage: string?
 local render: (boolean?) -> ()
 local load: () -> ()
+
+local function detailUid(): string?
+	local uid = inventory.uid
+	return if route == "inventory" and not inventory.mode and uid and data and data.units[uid] then uid else nil
+end
+
+local function refreshTrait(uid: string): ()
+	TraitView.refresh(trait, uid, function()
+		return detailUid() == uid and pages.inventory.screen.Enabled
+	end, function(snapshot)
+		data = snapshot or data
+		render(true)
+	end)
+end
 
 local function go(destination: Route): ()
 	if busy then
@@ -85,6 +102,7 @@ end
 
 local function beginRequest(message: string): ()
 	busy = true
+	TraitView.reset(trait, nil)
 	requestId += 1
 	local id = requestId
 	local page = pages[route]
@@ -133,6 +151,48 @@ local function mutate(name: string, ...: any): ()
 	end
 	busy = false
 	render()
+end
+
+local function inventoryAction(name: string, ...: any): ()
+	if name ~= "RerollTrait" and name ~= "RefreshTraitInfo" and name ~= "SelectRestrictedTrait" then
+		mutate(name, ...)
+		return
+	end
+	local uid = detailUid()
+	if busy or not uid or uid ~= ... or trait.pending then
+		return
+	end
+	if name == "RefreshTraitInfo" then
+		TraitView.reset(trait, nil)
+		render(true)
+		return
+	end
+	local info = trait.info
+	local _, selected = ...
+	local direct = name == "SelectRestrictedTrait"
+	if not info or info.uid ~= uid then
+		return
+	end
+	if direct then
+		if type(selected) ~= "string" or not TraitRemote.canSelect(info, selected) then
+			return
+		end
+	elseif info.restricted or info.locked or info.shards < info.cost then
+		return
+	end
+	beginRequest(if direct then "Equipping trait…" else "Rerolling trait…")
+	local snapshot, updatedInfo, code = TraitRemote.change(uid, if direct then selected else nil)
+	busy = false
+	if snapshot and updatedInfo then
+		data = snapshot
+		trait.uid = uid
+		trait.info = updatedInfo
+		notice = if direct then "Trait equipped." else "Trait rerolled."
+		refreshTrait(uid)
+	else
+		notice = TraitRemote.message(code)
+	end
+	render(true)
 end
 
 local function reward(result: Remote.StageResult, lobbyUnlocked: boolean): ()
@@ -231,6 +291,13 @@ end
 
 render = function(preserveScroll: boolean?)
 	local page = pages[route]
+	local uid = detailUid()
+	if trait.uid ~= uid then
+		TraitView.reset(trait, uid)
+		if uid then
+			refreshTrait(uid)
+		end
+	end
 	local scroll = if route == "story"
 		then storyScroll
 		elseif route == "inventory" and not inventory.uid and not inventory.mode then inventory.scroll
@@ -282,7 +349,7 @@ render = function(preserveScroll: boolean?)
 	elseif route == "story" then
 		first = StoryView.render(page, snapshot, startStage, openTeam, openSummon, focusStage)
 	else
-		first = InventoryView.render(page, snapshot, inventory, mutate, function(keepScroll)
+		first = InventoryView.render(page, snapshot, inventory, trait, inventoryAction, function(keepScroll)
 			render(keepScroll)
 		end)
 	end

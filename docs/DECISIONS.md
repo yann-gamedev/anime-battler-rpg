@@ -29,12 +29,13 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-022 | 2026-11-26 | Summon Gems terikat pada peluang terakhir yang dikirim server untuk banner dan state pity pemain. UI menerima peluang aktual untuk 1× dan peluang marginal tiap posisi draw 10× | Peluang yang ditampilkan mencakup perubahan pity dan jaminan selama batch |
 | D-023 | 2026-11-26 | `guaranteedFeatured` ditambahkan ke record pity v1. Banner Limited contoh aktif 26 November sampai sebelum 10 Desember 2026 UTC | Menyimpan jaminan featured berikutnya dan membatasi rotasi contoh ke 14 hari |
 | D-024 | 2026-11-26 | PolicyService sukses di-cache selama sesi. Kegagalan lookup memblokir Gems dan dapat dicoba kembali setelah 60 detik | Menjaga pembatasan paid random items saat layanan kebijakan tidak merespons |
+| D-025 | 2026-11-26 | Pemain restricted dapat memilih trait Biasa atau Langka langsung dengan Gold (menutup D-OPEN-1) | Jalur deterministik memakai Gold dari gameplay. Harga balancing awal 200 Gold untuk Biasa dan 600 Gold untuk Langka ada di `Config/Traits.luau` |
 
 ## Keputusan terbuka (butuh manusia)
 
 | ID | Pertanyaan | Opsi |
 |---|---|---|
-| D-OPEN-1 | Pengganti reroll trait untuk pemain dengan `ArePaidRandomItemsRestricted` | (a) Pilih trait tier Biasa/Langka langsung dengan Gold; (b) Trait hanya dari drop gameplay; (c) Toko trait tetap dengan Gems |
+| D-OPEN-1 | Pengganti reroll trait untuk pemain dengan `ArePaidRandomItemsRestricted` | Diputuskan di D-025 |
 | D-OPEN-2 | Nama final game | — |
 | D-OPEN-3 | Harga final semua produk Robux | Lihat `docs/ECONOMY.md` §5 |
 | D-OPEN-4 | Pembagian peran 2 anggota tim (art/UI vs sistem) | — |
