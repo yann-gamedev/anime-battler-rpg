@@ -77,7 +77,12 @@ export type BannerDef = {
 	featuredSharePercent: number?,
 	guaranteeFeaturedAfterMiss: boolean?,
 	rotationDays: number?,
+	startsAt: number?, -- detik Unix UTC, inklusif
+	endsAt: number?, -- detik Unix UTC, eksklusif
 }
+
+-- Pity per banner. `guaranteedFeatured` additive v1 (nil = false), tanpa migrasi.
+export type PityRecord = { sinceLegendary: number, sinceMythic: number, guaranteedFeatured: boolean? }
 
 export type StageDef = {
 	id: string,
@@ -140,7 +145,7 @@ export type Profile = {
 	units: { [string]: OwnedUnit },
 	teams: { Team },
 	story: { cleared: { [string]: number } },
-	pity: { [string]: { sinceLegendary: number, sinceMythic: number } },
+	pity: { [string]: PityRecord },
 	traitPity: number,
 	tradeDaily: { day: number, count: number },
 	skinsOwned: { [string]: boolean },
@@ -177,7 +182,7 @@ export type MyData = {
 	units: { [string]: ClientOwnedUnit },
 	teams: { Team },
 	story: { cleared: { [string]: number } },
-	pity: { [string]: { sinceLegendary: number, sinceMythic: number } },
+	pity: { [string]: PityRecord },
 	progression: ProgressionData,
 }
 
@@ -255,5 +260,45 @@ export type StageResultData = {
 	firstThreeStar: boolean,
 	progression: ProgressionData,
 }
+
+export type BannerKind = "Standard" | "Limited"
+export type SummonPayment = "Gems" | "Tickets"
+export type RarityOdds = { rarity: Rarity, percent: number }
+export type UnitOdds = { unitId: string, name: string, rarity: Rarity, percent: number }
+-- Semua percent 0..100, termasuk hasil berpeluang nol.
+export type Odds = { rarities: { RarityOdds }, units: { UnitOdds } }
+
+export type BannerPityView = {
+	sinceLegendary: number,
+	sinceMythic: number,
+	legendaryPlusRolls: number,
+	mythicRolls: number,
+	guaranteedFeatured: boolean,
+}
+
+export type BannerView = {
+	id: string,
+	kind: BannerKind,
+	active: boolean,
+	startsAt: number?,
+	endsAt: number?,
+	featuredUnitId: string?,
+	prices: { gems1: number, gems10: number, tickets1: number, tickets10: number },
+	pity: BannerPityView,
+	odds: { base: Odds, single: Odds, ten: { Odds } },
+}
+
+-- Data sukses GetBannerInfo().
+export type BannerInfo = {
+	restricted: boolean,
+	balances: { Gems: number, SummonTickets: number },
+	capacity: { used: number, max: number },
+	banners: { BannerView },
+}
+
+export type SummonRoll = { uid: string, unitId: string, name: string, rarity: Rarity }
+
+-- Data sukses Summon(bannerId, count, payWith).
+export type SummonResultData = { bannerId: string, rolls: { SummonRoll }, info: BannerInfo? }
 
 return table.freeze({})

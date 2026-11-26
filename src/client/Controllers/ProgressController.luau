@@ -5,6 +5,7 @@ local UserInputService = game:GetService("UserInputService")
 local Remotes = require(ReplicatedStorage.Shared.Net.Remotes)
 local UI = script.Parent.Parent.UI
 local BattleViewController = require(script.Parent.BattleViewController)
+local SummonController = require(script.Parent.SummonController)
 local TeamBoardController = require(script.Parent.TeamBoardController)
 local UIController = require(script.Parent.UIController)
 local Page = require(UI.ProgressPage)
@@ -47,6 +48,19 @@ local function openTeam(): ()
 	end
 	storyScroll = pages.story.body.CanvasPosition
 	TeamBoardController.open(function()
+		render(true)
+		load()
+	end)
+end
+
+local function openSummon(): ()
+	if busy then
+		return
+	end
+	if route == "story" then
+		storyScroll = pages.story.body.CanvasPosition
+	end
+	SummonController.open(function()
 		render(true)
 		load()
 	end)
@@ -137,8 +151,10 @@ local function reward(result: Remote.StageResult, lobbyUnlocked: boolean): ()
 			amounts.SummonTickets
 		)
 	)
-	if result.stageId == "tutorial" and amounts.SummonTickets > 0 then
-		table.insert(rows, "Free tickets earned for future summons.")
+	local earnedTickets = result.stageId == "tutorial" and amounts.SummonTickets > 0
+	local visitedSummon = false
+	if earnedTickets then
+		table.insert(rows, "Use your free tickets on a summon banner.")
 	elseif lobbyUnlocked then
 		table.insert(rows, "The lobby is now open.")
 	end
@@ -152,13 +168,30 @@ local function reward(result: Remote.StageResult, lobbyUnlocked: boolean): ()
 		else
 			render(true)
 		end
+		if visitedSummon then
+			load()
+		end
 	end
 	local title = (if result.stageId == "tutorial" then "Tutorial" else "Stage " .. result.stageId)
 		.. (if result.stars > 0 then " victory" elseif result.replay.winner == "draw" then " draw" else " defeat")
-	modal = Modal.create(parent, title, {}, nil, function() end, dismiss, {
-		body = rows,
-		closeText = "Continue",
-	})
+	local choices: { Modal.Choice } = if earnedTickets then { { label = "Open Summon", value = "summon" } } else {}
+	modal = Modal.create(
+		parent,
+		title,
+		choices,
+		if earnedTickets then "summon" else nil,
+		function()
+			visitedSummon = true
+			SummonController.open(function()
+				UIController.show(modal.screen, modal.first)
+			end)
+		end,
+		dismiss,
+		{
+			body = rows,
+			closeText = "Continue",
+		}
+	)
 	restore = UIController.overlay(modal.screen, modal.first)
 end
 
@@ -231,6 +264,7 @@ render = function(preserveScroll: boolean?)
 		Page.button(page.body, "Inventory", function()
 			go("inventory")
 		end)
+		Page.button(page.body, "Summon", openSummon)
 		Page.button(page.body, "Team Board", openTeam)
 		if snapshot then
 			Page.label(
@@ -246,7 +280,7 @@ render = function(preserveScroll: boolean?)
 	elseif not snapshot then
 		Page.label(page.body, "Your profile is unavailable.")
 	elseif route == "story" then
-		first = StoryView.render(page, snapshot, startStage, openTeam, focusStage)
+		first = StoryView.render(page, snapshot, startStage, openTeam, openSummon, focusStage)
 	else
 		first = InventoryView.render(page, snapshot, inventory, mutate, function(keepScroll)
 			render(keepScroll)

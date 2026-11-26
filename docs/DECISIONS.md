@@ -26,6 +26,9 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-018 | 2026-11-26 | Tombol Start battle di Team Board membuka latihan tanpa reward melawan susunan stage 1-1. Perubahan tim disimpan sebelum latihan dimulai | Memberi alur battle yang dapat dimainkan sebelum progres story tersedia dan menjaga hasil berdasarkan formasi yang divalidasi server |
 | D-020 | 2026-11-26 | Progres story menambah material XP Scroll dan status progres melalui rekonsiliasi profil v1. Tutorial memberi 10 tiket sekali pada kemenangan, dan kemenangan 1-3 membuka lobby | Menggunakan mata uang dan flag onboarding yang sudah ada. Summon sungguhan mengikuti prompt 07 |
 | D-021 | 2026-11-26 | Gold/XP Scroll, biaya Gold merge, dan ambang slot papan memakai nilai sementara di `Config/Progression.luau`. Stage 1-1 sampai 1-3 memakai musuh pengantar (menggantikan D-011 untuk ketiga stage itu) | Dokumen ekonomi belum menentukan nilai ini. Simulasi menemukan lonjakan kesulitan mulai 1-4 |
+| D-022 | 2026-11-26 | Summon Gems terikat pada peluang terakhir yang dikirim server untuk banner dan state pity pemain. UI menerima peluang aktual untuk 1× dan peluang marginal tiap posisi draw 10× | Peluang yang ditampilkan mencakup perubahan pity dan jaminan selama batch |
+| D-023 | 2026-11-26 | `guaranteedFeatured` ditambahkan ke record pity v1. Banner Limited contoh aktif 26 November sampai sebelum 10 Desember 2026 UTC | Menyimpan jaminan featured berikutnya dan membatasi rotasi contoh ke 14 hari |
+| D-024 | 2026-11-26 | PolicyService sukses di-cache selama sesi. Kegagalan lookup memblokir Gems dan dapat dicoba kembali setelah 60 detik | Menjaga pembatasan paid random items saat layanan kebijakan tidak merespons |
 
 ## Keputusan terbuka (butuh manusia)
 

@@ -57,7 +57,15 @@ local Constants = {
 		MergeUnit = { max = 5, windowSec = 10 },
 		DismantleUnit = { max = 5, windowSec = 10 },
 		LockUnit = { max = 10, windowSec = 10 },
+		GetBannerInfo = { max = 6, windowSec = 10 },
+		Summon = { max = 2, windowSec = 3 },
 	} :: { [string]: RateLimitRule },
+
+	-- Batas panjang ID banner dari client (validasi bentuk sebelum lookup config).
+	MAX_BANNER_ID_LENGTH = 64,
+	-- PolicyService gagal → dianggap restricted (fail-closed) dan dicoba lagi setelah jeda ini.
+	-- Hasil sukses di-cache sampai PlayerRemoving.
+	POLICY_RETRY_SECONDS = 60,
 
 	-- UserId admin untuk perintah debug (AdminService, belum dibuat).
 	ADMIN_USER_IDS = {} :: { number },

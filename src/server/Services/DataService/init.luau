@@ -20,6 +20,7 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 local Migrations = require(script.Migrations)
 local Progress = require(script.Progress)
 local ProfileRules = require(script.ProfileRules)
+local Summons = require(script.Summons)
 local Template = require(script.Template)
 
 type Session = {
@@ -55,6 +56,8 @@ local function getActiveSession(player: Player): Session?
 	end
 	return nil
 end
+
+DataService.summons = Summons.create(getActiveSession, DataService.Changed) -- mutasi summon atomik
 
 local function getProfile(player: Player): Types.Profile?
 	local session = getActiveSession(player)

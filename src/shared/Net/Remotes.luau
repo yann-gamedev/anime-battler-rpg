@@ -17,6 +17,8 @@ local Remotes = {
 		"MergeUnit", -- (targetUid: string, materialUids: { string }) → Result<MyData>
 		"DismantleUnit", -- (uids: { string }) → Result<MyData>
 		"LockUnit", -- (uid: string, locked: boolean) → Result<MyData>
+		"GetBannerInfo", -- () → Result<BannerInfo>
+		"Summon", -- (bannerId: string, count: 1 | 10, payWith: "Gems" | "Tickets") → Result<SummonResultData>
 	},
 }
 
