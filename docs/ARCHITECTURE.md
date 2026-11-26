@@ -169,12 +169,31 @@ Client BattleViewController
 - `BattleSim` menerima tabel unit dan seed. Hasilnya `{ winner, log, ticks, survivors }`. Simulasi berjalan dalam 10 tick per detik, dengan batas 900 tick (90 detik) yang menghasilkan seri jika kedua tim masih hidup.
 - Input menggunakan sel 1–9 per tim, dihitung dari baris depan. Log memakai sel 1–18 pada papan gabungan 3 kolom × 6 baris. Sel awal A = `10 - cell`, sel awal B = `9 + cell`. Log `spawn` memberi ID battle dan HP awal. Unit panggilan memiliki ID sendiri dan field `owner`.
 - Karena deterministik, PvP async dan Perang Wilayah memakai sim yang sama dengan snapshot tim pertahanan.
+- `BattleService.runPve(player, teamUnits, enemyDef)` membaca unit dari profil server. Remote `StartTestBattle(teamId)` hanya menerima indeks tim milik pemanggil. Di Studio, UserId yang ada di `Constants.ADMIN_USER_IDS` dapat menerima hasil melalui event pribadi `BattleResult`. Cinematic menghentikan jam replay pada tick ultimate sampai efek selesai atau dilewati.
 - Bentuk event log (contoh):
   ```lua
   { t = 12, kind = "attack", src = 3, dst = 7, dmg = 140, crit = false, hp = 300, shield = 0 }
   { t = 40, kind = "ultimate", src = 1, skill = "seraphine_dawn", cell = 12, targets = {7, 8}, cinematic = true }
   { t = 41, kind = "death", unit = 8 }
   ```
+
+### Uji replay di Studio
+
+1. Sinkronkan proyek dengan Rojo dalam mode Edit, lalu jalankan isi `studio/world/build_arena.luau` di Command Bar. Simpan place uji agar arena tetap ada.
+2. Tambahkan UserId penguji ke `Constants.ADMIN_USER_IDS` pada checkout lokal. Gunakan place pengujian yang sudah dipublikasikan dengan akses API Studio untuk memuat profil.
+3. Play Solo. Tempatkan dan simpan setidaknya satu unit. Dari **Client** Command Bar, jalankan `local r = game:GetService("ReplicatedStorage").Remotes.StartTestBattle:InvokeServer(1); assert(r.ok, r.code)`.
+4. Uji 1×, 2×, Skip ultimate, dan Cinematics Off. Pastikan unit hilang ketika event kematian diputar dan layar hasil tampil. Tutup replay dan cek kamera kembali serta `Workspace.BattleReplayVisuals` hilang. Ulangi untuk memastikan replay dapat dibuka lagi.
+5. Untuk 6 vs 6, siapkan enam unit lewat **Server** Command Bar di place uji, lalu ulangi langkah 3 dengan Device Emulation pada ponsel kecil dalam orientasi portrait dan landscape. Tim lawan uji berisi enam unit.
+
+```luau
+local player = game:GetService("Players"):GetPlayers()[1]
+local data = require(game:GetService("ServerScriptService").Server.Services.DataService)
+local slots = table.create(9, "")
+for cell, unitId in { "brutus", "dorin", "pip", "mira", "elodie", "seraphine" } do
+	slots[cell] = assert(data.grantUnit(player, unitId, "admin")).uid
+end
+assert(data.setTeamSlots(player, 1, slots))
+```
 - Ada test di `tests/BattleSim.spec.luau`: seed sama → hasil sama.
 
 ## 6. Skema data pemain (versi 1)

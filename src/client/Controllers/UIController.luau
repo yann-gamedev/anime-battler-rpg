@@ -22,4 +22,21 @@ function UIController.focus(first: GuiObject?): ()
 	end
 end
 
+function UIController.overlay(screen: ScreenGui, first: GuiObject?): () -> ()
+	local previous = active
+	local selection = GuiService.SelectedObject
+	UIController.show(screen, first)
+	return function()
+		if active == screen then
+			screen.Enabled = false
+			active = nil
+			if previous and previous.Parent then
+				UIController.show(previous, if selection and selection:IsDescendantOf(previous) then selection else nil)
+			else
+				GuiService.SelectedObject = nil
+			end
+		end
+	end
+end
+
 return UIController

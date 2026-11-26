@@ -17,6 +17,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 - [ ] `BattleSim` deterministik + sinergi + 15 ultimate + test → `prompts/03-battle-sim.md`
   - Implementasi, build, dan suite Luau lulus. Benchmark 6 vs 6 pada Roblox Studio masih tertunda.
 - [ ] `BattleService` + `BattleViewController` (replay dengan model placeholder) → `prompts/04-battle-view.md`
+  - Implementasi, build, dan tes timeline lulus. Uji visual dan FPS 6 vs 6 di Device Emulation masih tertunda.
 
 ## M3 — UI & progres
 - [ ] Fondasi UI (Theme, komponen), Main Menu dipindah ke controller, Team Board 3×3 → `prompts/05-ui-team-board.md`

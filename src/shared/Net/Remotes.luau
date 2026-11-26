@@ -5,9 +5,10 @@
 
 local Remotes = {
 	FOLDER_NAME = "Remotes",
-	Events = { "InventoryChanged", "CurrencyChanged" }, -- S→C
+	Events = { "InventoryChanged", "CurrencyChanged", "BattleResult" }, -- S→C
 	Functions = { -- RemoteFunction, hanya C→S
 		"GetMyData",
+		"StartTestBattle",
 		"GetTeamBoard", -- () → Result<TeamBoardData>
 		"SaveTeam", -- (teamIndex: number, slots: { string }) → Result<TeamBoardData>
 	},
