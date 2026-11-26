@@ -5,10 +5,12 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Types = require(Shared.Types)
 local BattlePass = require(Shared.Config.BattlePass)
 local BattlePassSeason = require(Shared.BattlePassSeason)
+local ProfileFrames = require(Shared.Config.ProfileFrames)
 local Validate = require(script.Parent.Parent.Parent.Util.Validate)
 
 export type Ledger = {
 	getSeason: (player: Player, seasonId: string) -> Types.BattlePassSeasonRecord?,
+	getProfileFrame: (player: Player) -> string?,
 	addXp: (player: Player, seasonId: string, amount: number, maxXp: number) -> (string?, number?),
 	claim: (player: Player, request: any) -> string?,
 }
@@ -58,6 +60,8 @@ function Handlers.create(deps: Deps)
 				premiumClaimed = record.premiumClaimed[key] == true,
 			})
 		end
+		-- Bingkai hanya dikirim bila sudah diperoleh (lintas musim) dan masih ada di config.
+		local frameId = ledger.getProfileFrame(player)
 		return {
 			seasonId = season.id,
 			startsAt = season.startsAt,
@@ -68,6 +72,7 @@ function Handlers.create(deps: Deps)
 			unlockedTier = BattlePassSeason.unlockedTier(season, record.xp),
 			premium = record.premium,
 			tiers = tiers,
+			profileFrameId = if frameId and ProfileFrames[frameId] then frameId else nil,
 		}
 	end
 

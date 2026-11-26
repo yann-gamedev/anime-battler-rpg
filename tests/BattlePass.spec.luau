@@ -56,7 +56,10 @@ local function world()
 		local total = tiers * XP_PER_TIER
 		while total > 0 do
 			local step = math.min(total, BattlePass.maxQuestXpPerGrant)
-			assert(h.grantQuestXp(player, "test_quest", step) == nil)
+			assert(
+				h.grantQuestXp(player, "test_quest", step) == nil,
+				"grantQuestXp must succeed during the active season"
+			)
 			total -= step
 		end
 	end
@@ -213,5 +216,68 @@ return function(t: TestRunner.TestContext): ()
 		local info = w.h.GetBattlePass(p)
 		t.expect(info.data.active).toBe(false)
 		t.expect(info.data.seasonId).toBe(SEASON.id)
+	end)
+
+	t.test("premium tier 30 grants skin and profile frame atomically, once", function()
+		local w = world()
+		local p = w.join()
+		local tier = #SEASON.tiers
+		local kinds: { [string]: string } = {}
+		for _, reward in SEASON.tiers[tier].premium do
+			kinds[reward.kind] = reward.id :: string
+		end
+		t.expect(kinds.ProfileFrame).toBe("s1_academy_frame")
+		t.expect(kinds.Skin ~= nil).toBe(true)
+		t.expect(w.h.GetBattlePass(p).data.profileFrameId).toBe(nil)
+		w.giveXp(p, tier)
+		t.expect(w.h.ClaimBattlePassTier(p, "Premium", tier).code).toBe("PREMIUM_REQUIRED")
+		t.expect(w.sessions[p].Data.battlePass.profileFrames.s1_academy_frame).toBe(nil)
+		w.record(p).premium = true
+		local r = w.h.ClaimBattlePassTier(p, "Premium", tier)
+		t.expect(r.ok).toBe(true)
+		t.expect(r.data.profileFrameId).toBe("s1_academy_frame")
+		t.expect(r.data.tiers[tier].premiumClaimed).toBe(true)
+		local data = w.sessions[p].Data
+		t.expect(data.battlePass.profileFrames.s1_academy_frame).toBe(true)
+		t.expect(data.skinsOwned[kinds.Skin]).toBe(true)
+		-- Klaim ulang (replay) ditolak dan tidak mengubah entitlement.
+		t.expect(w.h.ClaimBattlePassTier(p, "Premium", tier).code).toBe("ALREADY_CLAIMED")
+		t.expect(w.h.ClaimBattlePassTier(p, "Premium", tier, "selene").code).toBe("ALREADY_CLAIMED")
+		-- Free tier 30 tidak memberi bingkai.
+		t.expect(w.h.ClaimBattlePassTier(p, "Free", tier).ok).toBe(true)
+		t.expect(w.h.GetBattlePass(p).data.profileFrameId).toBe("s1_academy_frame")
+	end)
+
+	t.test("profile frame persists across seasons and saved sessions", function()
+		local w = world()
+		local p = w.join()
+		local tier = #SEASON.tiers
+		w.giveXp(p, tier)
+		w.record(p).premium = true
+		t.expect(w.h.ClaimBattlePassTier(p, "Premium", tier).ok).toBe(true)
+		-- Rejoin dari data tersimpan (salinan) dan setelah musim berakhir.
+		w.sessions[p] = { Data = TableUtil.deepCopy(w.sessions[p].Data) }
+		w.clock.value = SEASON.endsAt + 86400
+		local info = w.h.GetBattlePass(p)
+		t.expect(info.data.active).toBe(false)
+		t.expect(info.data.profileFrameId).toBe("s1_academy_frame")
+	end)
+
+	t.test("legacy battle pass records without frame fields stay compatible", function()
+		local w = world()
+		local p = w.join()
+		local data = w.sessions[p].Data :: any
+		data.battlePass = { seasons = { [SEASON.id] = { xp = 3 * XP_PER_TIER, premium = true } } }
+		local info = w.h.GetBattlePass(p)
+		t.expect(info.ok).toBe(true)
+		t.expect(info.data.profileFrameId).toBe(nil)
+		t.expect(info.data.xp).toBe(3 * XP_PER_TIER)
+		t.expect(w.h.ClaimBattlePassTier(p, "Premium", 1).ok).toBe(true)
+		t.expect(next(w.sessions[p].Data.battlePass.profileFrames)).toBe(nil)
+		-- profileFrameId tanpa kepemilikan dibuang oleh rekonsiliasi, bukan dipercaya.
+		w.sessions[p].Data.battlePass.profileFrameId = "s1_academy_frame"
+		t.expect(w.h.GetBattlePass(p).data.profileFrameId).toBe(nil)
+		w.giveXp(p, 1)
+		t.expect(w.sessions[p].Data.battlePass.profileFrameId).toBe(nil)
 	end)
 end

@@ -77,6 +77,13 @@ function ShopRules.reconcile(profile: any): ()
 	if type(profile.battlePass.seasons) ~= "table" then
 		profile.battlePass.seasons = {}
 	end
+	-- Bingkai profil (lintas musim): map kepemilikan + bingkai terakhir yang harus tetap dimiliki.
+	local frames = sanitizeFlags(profile.battlePass.profileFrames)
+	profile.battlePass.profileFrames = frames
+	local frameId = profile.battlePass.profileFrameId
+	if type(frameId) ~= "string" or frames[frameId] ~= true then
+		profile.battlePass.profileFrameId = nil
+	end
 	for seasonId, record in profile.battlePass.seasons do
 		if type(seasonId) == "string" then
 			profile.battlePass.seasons[seasonId] = ShopRules.readSeason(record)

@@ -169,7 +169,12 @@ export type Profile = {
 	materials: Materials,
 	progress: StoryProgress,
 	purchases: PurchaseRecord,
-	battlePass: { seasons: { [string]: BattlePassSeasonRecord } },
+	-- profileFrames/profileFrameId additive: entitlement bingkai lintas musim (nil di profil lama).
+	battlePass: {
+		seasons: { [string]: BattlePassSeasonRecord },
+		profileFrames: { [string]: boolean }?,
+		profileFrameId: string?,
+	},
 }
 
 -- Field additive prompt 09 (tanpa migrasi, dilengkapi ShopRules.reconcile).
