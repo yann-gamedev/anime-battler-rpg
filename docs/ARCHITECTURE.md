@@ -13,6 +13,8 @@
 
 Dependency yang disetujui: **ProfileStore** (data pemain, session locking). Package lain harus disetujui manusia dan dicatat di `docs/DECISIONS.md`.
 
+Jalankan `wally install` sebelum `rojo serve` atau `rojo build`. Rojo memetakan `ServerPackages` ke `ServerScriptService`, sehingga ProfileStore hanya tersedia di server.
+
 ## 2. Struktur folder
 
 ```
@@ -42,7 +44,9 @@ battler-rpg/
     │   │   ├── Economy.luau
     │   │   ├── Stages.luau
     │   │   ├── Products.luau     # ID developer product & gamepass
-    │   │   ├── Territories.luau
+│   │   ├── Territories.luau
+│   │   ├── Ultimates.luau    # parameter angka untuk ultimate
+│   │   ├── Validate.luau     # validasi config saat server boot
     │   │   └── Assets.luau       # asset ID model/anim/sound
     │   ├── BattleSim/        # simulasi battle deterministik, tanpa Instance
     │   │   ├── init.luau
@@ -155,21 +159,42 @@ Client: StartStage(stageId, teamId)
   └─► Server BattleService
         1. validasi tim & stage
         2. seed = Random.new():NextInteger(...)
-        3. result = BattleSim.run(teamA, teamB, seed)   -- murni data, instan
+        3. result = BattleSim.run({ teamA = teamA, teamB = teamB, seed = seed })
         4. beri reward berdasarkan result.winner
         5. kirim { seed, log, winner, rewards } ke client
 Client BattleViewController
   └─► memutar `log` (urutan event) dengan model & animasi
 ```
 
-- `BattleSim` **tidak** menyentuh Instance, `workspace`, atau waktu nyata. Input = tabel unit + seed, output = `{ winner, log, ticks }`. Fixed tick (mis. 10 tick/detik), batas maks 900 tick (90 detik) → seri jika habis.
+- `BattleSim` menerima tabel unit dan seed. Hasilnya `{ winner, log, ticks, survivors }`. Simulasi berjalan dalam 10 tick per detik, dengan batas 900 tick (90 detik) yang menghasilkan seri jika kedua tim masih hidup.
+- Input menggunakan sel 1–9 per tim, dihitung dari baris depan. Log memakai sel 1–18 pada papan gabungan 3 kolom × 6 baris. Sel awal A = `10 - cell`, sel awal B = `9 + cell`. Log `spawn` memberi ID battle dan HP awal. Unit panggilan memiliki ID sendiri dan field `owner`.
 - Karena deterministik, PvP async dan Perang Wilayah memakai sim yang sama dengan snapshot tim pertahanan.
+- `BattleService.runPve(player, teamUnits, enemyDef)` membaca unit dari profil server. Remote `StartTestBattle(teamId)` hanya menerima indeks tim milik pemanggil. Di Studio, UserId yang ada di `Constants.ADMIN_USER_IDS` dapat menerima hasil melalui event pribadi `BattleResult`. Cinematic menghentikan jam replay pada tick ultimate sampai efek selesai atau dilewati.
+- `StartPracticeBattle(teamId)` memakai tim yang sudah tersimpan dan batas slot yang sama dengan `SaveTeam`. Lawan diambil dari stage 1-1. Latihan tidak memberi reward atau progres story.
 - Bentuk event log (contoh):
   ```lua
-  { t = 12, kind = "attack", src = 3, dst = 7, dmg = 140, crit = false }
-  { t = 40, kind = "ultimate", src = 1, skill = "seraphine_dawn", targets = {7, 8} }
+  { t = 12, kind = "attack", src = 3, dst = 7, dmg = 140, crit = false, hp = 300, shield = 0 }
+  { t = 40, kind = "ultimate", src = 1, skill = "seraphine_dawn", cell = 12, targets = {7, 8}, cinematic = true }
   { t = 41, kind = "death", unit = 8 }
   ```
+
+### Uji replay di Studio
+
+1. Sinkronkan proyek dengan Rojo dalam mode Edit, lalu jalankan isi `studio/world/build_arena.luau` di Command Bar. Simpan place uji agar arena tetap ada.
+2. Tambahkan UserId penguji ke `Constants.ADMIN_USER_IDS` pada checkout lokal. Gunakan place pengujian yang sudah dipublikasikan dengan akses API Studio untuk memuat profil.
+3. Play Solo. Tempatkan dan simpan setidaknya satu unit. Dari **Client** Command Bar, jalankan `local r = game:GetService("ReplicatedStorage").Remotes.StartTestBattle:InvokeServer(1); assert(r.ok, r.code)`.
+4. Uji 1×, 2×, Skip ultimate, dan Cinematics Off. Pastikan unit hilang ketika event kematian diputar dan layar hasil tampil. Tutup replay dan cek kamera kembali serta `Workspace.BattleReplayVisuals` hilang. Ulangi untuk memastikan replay dapat dibuka lagi.
+5. Untuk 6 vs 6, siapkan enam unit lewat **Server** Command Bar di place uji, lalu ulangi langkah 3 dengan Device Emulation pada ponsel kecil dalam orientasi portrait dan landscape. Tim lawan uji berisi enam unit.
+
+```luau
+local player = game:GetService("Players"):GetPlayers()[1]
+local data = require(game:GetService("ServerScriptService").Server.Services.DataService)
+local slots = table.create(9, "")
+for cell, unitId in { "brutus", "dorin", "pip", "mira", "elodie", "seraphine" } do
+	slots[cell] = assert(data.grantUnit(player, unitId, "admin")).uid
+end
+assert(data.setTeamSlots(player, 1, slots))
+```
 - Ada test di `tests/BattleSim.spec.luau`: seed sama → hasil sama.
 
 ## 6. Skema data pemain (versi 1)
@@ -193,9 +218,11 @@ type Profile = {
 	currencies: { Gold: number, Gems: number, TraitShards: number, SummonTickets: number, AsramaTokens: number },
 	accountLevel: number,                    -- dari progres story; syarat trade (SYSTEMS A2)
 	units: { [string]: OwnedUnit },          -- key = uid
-	teams: { { name: string, slots: { [number]: string? } } }, -- slot 1..9 → uid
+	teams: { { name: string, slots: { string } } }, -- 9 entri; "" = slot kosong
 	story: { cleared: { [string]: number } }, -- stageId → bintang 1..3
 	pity: { [string]: { sinceLegendary: number, sinceMythic: number } }, -- per bannerId
+	materials: { XPScrolls: number },
+	progress: { tutorialBattleCleared: boolean, firstThreeStarClaimed: { [string]: boolean }, replayDay: number, replayCount: number },
 	traitPity: number,                       -- reroll sejak Legendaris+ terakhir (UNITS §5)
 	tradeDaily: { day: number, count: number }, -- batas 10 trade/hari (SYSTEMS A2)
 	skinsOwned: { [string]: boolean },
@@ -210,6 +237,24 @@ type Profile = {
 
 Template default ada di `DataService/Template.luau`. Batas: maks 500 unit per pemain (konstanta di `Constants.luau`).
 
+`DataService.getProfile(player)` memberi snapshot beku. Panggil lagi setelah mutasi untuk membaca nilai terbaru. `GetMyData` mengirim mata uang, inventaris, tim, progres story, dan pity milik pemanggil. `InventoryChanged` dan `CurrencyChanged` mengirim snapshot terbaru hanya ke pemain tersebut.
+
+### Uji penyimpanan di Studio
+
+1. Gunakan place pengujian yang sudah dipublikasikan dan aktifkan **Enable Studio Access to API Services**. DataService memakai `PlayerProfiles_Studio` di Studio dan `PlayerProfiles_Live` di server live.
+2. Masukkan UserId penguji ke `Constants.ADMIN_USER_IDS` di checkout lokal. Jalankan Play Solo dengan Command Bar dalam konteks **Server** dan pastikan profil sudah dimuat.
+3. Di Command Bar, ambil pemain dengan `local player = game:GetService("Players"):GetPlayers()[1]`, lalu ambil service dengan `local data = require(game:GetService("ServerScriptService").Server.Services.DataService)`. Jalankan `assert(data.adminAddGems(player, 100))` dan catat saldo dari `data.getProfile(player).currencies.Gems`.
+4. Stop dan Play lagi. Baca saldo dan pastikan tambahan 100 Gems tetap ada. `data.adminResetProfile(player)` mereset profil pemain penguji di store Studio. Kedua perintah hanya tersedia dari server bagi UserId yang diizinkan.
+5. Untuk tes Luau di Studio, set atribut Boolean `Workspace.RunTests` ke `true` sebelum Play dan cek ringkasan di Output.
+
+### Story dan inventory
+
+`StartStage(stageId, teamIndex)` menjalankan pertarungan untuk tim tersimpan. Bintang dan reward dihitung serta disimpan di server sebelum replay dikembalikan melalui respons. Jika tim masih kosong, stage `tutorial` memakai starter pemain tanpa mengubah slot tim yang tersimpan.
+
+`GetMyData`, `LevelUpUnit`, `MergeUnit`, `DismantleUnit`, dan `LockUnit` mengembalikan snapshot milik pemanggil saat berhasil. XP Scroll adalah material inventory. Field progres tambahan direkonsiliasi dalam skema v1, dan reward Gems pertama untuk 3★ diklaim bersama progres stage dalam satu mutasi profil.
+
+Di place uji dengan API Services aktif, mulai dari profil baru melalui Play → Onboarding. Menangkan tutorial dan cek 10 tiket. Isi tim, lalu selesaikan 1-1 sampai 1-3. Ulangi 1-1 dengan 3★ dan pastikan Gems pertama tidak diberikan lagi. Uji level up, lock, konfirmasi merge dan dismantle, lalu Stop → Play untuk memastikan progres tersimpan.
+
 ## 7. Studio build scripts (`studio/`)
 
 - Dipakai untuk membangun **hierarki instance** (layout UI, lobby placeholder) sekali jalan.
@@ -217,7 +262,12 @@ Template default ada di `DataService/Template.luau`. Batas: maks 500 unit per pe
 - Logika interaktif TIDAK disimpan sebagai string `Source`. Build script hanya membuat instance; controller di `src/client/Controllers/` yang mencari instance itu berdasarkan nama.
 - Setelah dijalankan, hasil UI disimpan di place (Team Create) atau diekspor ke `.rbxm` dan ditaruh di `assets/` (opsional).
 
-> Catatan: `build_main_menu.luau` yang sudah ada masih menaruh logika di `controller.Source`. File dipindah ke `studio/ui/` di prompt 00; logikanya dipecah ke `src/client/Controllers/MenuController.luau` di prompt 05.
+### Uji Main Menu dan Team Board di Studio
+
+1. Sinkronkan Rojo di mode Edit, lalu jalankan `studio/ui/build_main_menu.luau` dan `studio/world/build_arena.luau` di Command Bar. Menu memakai `UI/Theme.luau`. Team Board dibangun saat runtime.
+2. Di place pengujian dengan akses DataStore Studio, jalankan Device Emulation untuk iPhone SE dan tablet. Uji Play, Settings, Music, Back, Quit, serta fokus gamepad.
+3. Di Team Board, gabungkan dua filter lalu kosongkan lagi. Tempatkan Kael dan Pip untuk melihat sinergi Api, lalu pindahkan dan hapus salah satu unit. Uji tap di perangkat sentuh dan drag kartu ke slot dengan mouse.
+4. Susun dan simpan tiga unit, lalu Stop → Play. Pastikan ketiga slot kembali terisi. Tekan **Start battle** untuk memulai replay latihan. Jika ada perubahan belum disimpan, UI menyimpannya dahulu dan hanya memulai battle jika server menerima tim.
 
 ## 8. Konfigurasi sebagai data
 
@@ -235,7 +285,7 @@ local Units: { [string]: Types.UnitDef } = {
 		class = "Mage",
 		element = "Api",
 		status = "Murid",
-		base = { hp = 520, atk = 64, def = 18, spd = 1.0, range = 3 },
+		base = { hp = 520, atk = 64, def = 18, spd = 0.9, range = 3 },
 		ultimate = "kael_flare_burst",
 	},
 }

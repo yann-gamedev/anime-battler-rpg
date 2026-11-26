@@ -15,6 +15,17 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-007 | 2026-11-26 | Kode dikelola dengan Rojo + git; Studio build script hanya untuk membangun instance | Kode bisa di-review, di-diff, dan dikerjakan agent |
 | D-008 | 2026-11-26 | Data pemain memakai ProfileStore | Session locking mencegah dupe & kehilangan data |
 | D-009 | 2026-11-26 | Slot papan & tiket serangan tidak dijual | Pemain gratis tetap bermakna di mode kompetitif |
+| D-010 | 2026-11-26 | Banner Limited contoh menampilkan Seraphine sebagai featured, dan Seraphine tetap ada di pool Standar | Prompt 01 meminta contoh featured, sedangkan ECONOMY §2 mencantumkan Seraphine dalam contoh peluang Standar |
+| D-011 | 2026-11-26 | Stage awal memakai tiga musuh placeholder per bab dengan level 1–30 mengikuti urutan stage | Prompt 01 mengizinkan musuh sementara. Gold dan XP Scroll per stage menunggu angka reward di task story |
+| D-012 | 2026-11-26 | ProfileStore dipasang melalui `lm-loleris/profilestore@1.0.3` di `ServerPackages` | Paket server Wally untuk dependency yang sudah disetujui pada D-008 |
+| D-013 | 2026-11-26 | Sebelum penyimpanan persisten pertama, tim v1 memakai sembilan slot string dengan `""` untuk sel kosong | ProfileStore mensyaratkan array numerik tanpa celah. SessionStore sebelumnya hanya menyimpan data di memori |
+| D-014 | 2026-11-26 | BattleSim memakai xorshift32 dengan state terpisah per battle. Seed dinormalisasi ke 32 bit, dan state nol memakai konstanta nonnol | Hasil replay dapat diuji dengan seed yang sama tanpa bergantung pada RNG global |
+| D-015 | 2026-11-26 | Jarak memakai Manhattan pada papan gabungan. Range tetap sesuai definisi kelas. Tiap Familiar yang memenuhi sinergi dapat bangkit satu kali | Menetapkan aturan grid dan interpretasi revive untuk implementasi awal |
+| D-016 | 2026-11-26 | Parameter uji awal: langkah tiap 5 tick, slow sinergi Es 1 detik, reflect Garrick 3 detik, buff Aurelian 5 detik, radius Elodie dan Umbra 1 sel, dan roh Morvaine memakai 25% stat pemanggil | Dokumen desain belum menetapkan nilai ini. Nilai runtime ada di Config untuk penyesuaian balancing |
+| D-017 | 2026-11-26 | `StartTestBattle` memerlukan Studio dan UserId admin. Replay menghentikan jam simulasi pada tick cinematic | Membatasi jalur uji dan mempertahankan sinkronisasi event saat cinematic dilewati |
+| D-018 | 2026-11-26 | Tombol Start battle di Team Board membuka latihan tanpa reward melawan susunan stage 1-1. Perubahan tim disimpan sebelum latihan dimulai | Memberi alur battle yang dapat dimainkan sebelum progres story tersedia dan menjaga hasil berdasarkan formasi yang divalidasi server |
+| D-020 | 2026-11-26 | Progres story menambah material XP Scroll dan status progres melalui rekonsiliasi profil v1. Tutorial memberi 10 tiket sekali pada kemenangan, dan kemenangan 1-3 membuka lobby | Menggunakan mata uang dan flag onboarding yang sudah ada. Summon sungguhan mengikuti prompt 07 |
+| D-021 | 2026-11-26 | Gold/XP Scroll, biaya Gold merge, dan ambang slot papan memakai nilai sementara di `Config/Progression.luau`. Stage 1-1 sampai 1-3 memakai musuh pengantar (menggantikan D-011 untuk ketiga stage itu) | Dokumen ekonomi belum menentukan nilai ini. Simulasi menemukan lonjakan kesulitan mulai 1-4 |
 
 ## Keputusan terbuka (butuh manusia)
 

@@ -1,0 +1,10 @@
+[package]
+name = "battler-rpg/battler-rpg"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+private = true
+
+# Satu-satunya dependency yang disetujui: ProfileStore (docs/ARCHITECTURE.md §1).
+[server-dependencies]
+ProfileStore = "lm-loleris/profilestore@1.0.3"

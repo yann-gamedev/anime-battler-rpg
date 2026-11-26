@@ -1,0 +1,25 @@
+--!strict
+-- Registry SEMUA remote (docs/RULES.md §2). Server membuat instance di ReplicatedStorage.Remotes
+-- lewat src/server/Net/RemoteSetup.luau; client hanya WaitForChild.
+-- Semua RemoteFunction hanya C→S dan mengembalikan { ok: boolean, code: string?, data: any? }.
+
+local Remotes = {
+	FOLDER_NAME = "Remotes",
+	Events = { "InventoryChanged", "CurrencyChanged", "BattleResult" }, -- S→C
+	Functions = { -- RemoteFunction, hanya C→S
+		"GetMyData",
+		"StartTestBattle",
+		"StartPracticeBattle",
+		"GetTeamBoard", -- () → Result<TeamBoardData>
+		"SaveTeam", -- (teamIndex: number, slots: { string }) → Result<TeamBoardData>
+		"StartStage", -- (stageId: string, teamIndex: number) → Result<StageResultData>
+		"LevelUpUnit", -- (uid: string, levels: number) → Result<MyData>
+		"MergeUnit", -- (targetUid: string, materialUids: { string }) → Result<MyData>
+		"DismantleUnit", -- (uids: { string }) → Result<MyData>
+		"LockUnit", -- (uid: string, locked: boolean) → Result<MyData>
+	},
+}
+
+table.freeze(Remotes.Events)
+table.freeze(Remotes.Functions)
+return table.freeze(Remotes)
