@@ -1,6 +1,5 @@
 --!strict
 local Shared = game:GetService("ReplicatedStorage").Shared
-local Banners = require(Shared.Config.Banners)
 local Stages = require(Shared.Config.Stages)
 local Units = require(Shared.Config.Units)
 local Constants = require(Shared.Config.Constants)
@@ -27,18 +26,6 @@ function StoryView.guide(body: ScrollingFrame, data: Remote.Snapshot): ()
 		return
 	end
 
-	local odds = Banners.definitions.standard.oddsPercent
-	Page.label(
-		body,
-		string.format(
-			"Free Summon Tickets: %d. Standard banner base odds: Rare %g%% · Epic %g%% · Legendary %g%% · Mythic %g%%. Summoning opens in a future update.",
-			data.currencies.SummonTickets,
-			odds.Rare,
-			odds.Epic,
-			odds.Legendary,
-			odds.Mythic
-		)
-	)
 	local team = data.teams[1]
 	local deployed: { Types.BattleUnitInput } = {}
 	if team then
@@ -70,6 +57,7 @@ function StoryView.render(
 	data: Remote.Snapshot,
 	play: (string) -> (),
 	openTeam: () -> (),
+	openSummon: () -> (),
 	focusStage: string?
 ): TextButton
 	local first: TextButton? = nil
@@ -83,6 +71,9 @@ function StoryView.render(
 		StoryView.guide(page.body, data)
 	else
 		if not progress.tutorialDone then
+			if data.currencies.SummonTickets > 0 then
+				first = Page.button(page.body, "Summon with free tickets", openSummon)
+			end
 			StoryView.guide(page.body, data)
 		end
 		Page.label(
