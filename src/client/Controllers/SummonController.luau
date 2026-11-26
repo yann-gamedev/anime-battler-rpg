@@ -11,6 +11,7 @@ local Remote = require(UI.SummonRemote)
 local View = require(UI.SummonView)
 local Details = require(UI.SummonDetails)
 
+local Settings = require(script.Parent.SettingsController)
 local SummonController = {}
 local page: Page.Page
 local oddsPage: Page.Page
@@ -201,6 +202,7 @@ local function summon(count: Remote.Count, payment: Remote.Payment): ()
 	if result then
 		info = result.info
 		rolls = result.rolls
+		Settings.playEffect("summonReveal")
 		reveal(result.rolls, 1)
 	else
 		-- A failed reply can follow a committed mutation. Only the read is repeated.

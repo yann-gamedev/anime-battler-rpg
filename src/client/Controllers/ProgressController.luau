@@ -1,7 +1,6 @@
 --!strict
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 local Remotes = require(ReplicatedStorage.Shared.Net.Remotes)
 local UI = script.Parent.Parent.UI
 local BattleViewController = require(script.Parent.BattleViewController)
@@ -15,8 +14,9 @@ local InventoryView = require(UI.InventoryView)
 local TraitRemote = require(UI.TraitRemote)
 local TraitView = require(UI.TraitView)
 local Controls = require(UI.Components.Controls)
-
-local MonetizationController = require(script.Parent.MonetizationController)
+local Lobby = require(script.Parent.LobbyController)
+local LobbyRoutes = require(UI.LobbyRoutes)
+local LobbyPage = require(UI.LobbyPage)
 local StoryFlow = require(script.Parent.StoryFlow)
 local Products = require(ReplicatedStorage.Shared.Config.Products)
 local player = Players.LocalPlayer
@@ -35,9 +35,10 @@ local requestId = 0
 local notice = ""
 local storyScroll = Vector2.zero
 local focusStage: string?
+local enterOnLoad = false
+local storyFromWorld = false
 local render: (boolean?) -> ()
 local load: () -> ()
-
 local function detailUid(): string?
 	local uid = inventory.uid
 	return if route == "inventory" and not inventory.mode and uid and data and data.units[uid] then uid else nil
@@ -59,6 +60,18 @@ local function go(destination: Route): ()
 	route = destination
 	notice = ""
 	render()
+end
+
+local function enterWorld(): ()
+	storyFromWorld = false
+	LobbyRoutes.openWorld(function()
+		storyFromWorld = true
+		go("story")
+		load()
+	end, function()
+		go("hub")
+		load()
+	end)
 end
 
 local function openTeam(): ()
@@ -94,9 +107,15 @@ local function back(): ()
 		render()
 	elseif route == "story" then
 		storyScroll = pages.story.body.CanvasPosition
-		go("hub")
+		if storyFromWorld and Lobby.available() then
+			enterWorld()
+		else
+			go("hub")
+		end
 	elseif route ~= "hub" then
 		go("hub")
+	elseif data and data.progression and data.progression.tutorialDone and Lobby.available() then
+		enterWorld()
 	elseif onBack then
 		onBack()
 	end
@@ -131,7 +150,13 @@ load = function()
 	busy = false
 	data = snapshot
 	notice = failure or ""
-	render(true)
+	local openLobby = enterOnLoad
+	enterOnLoad = openLobby and snapshot == nil
+	if openLobby and snapshot and snapshot.progression and snapshot.progression.tutorialDone and Lobby.available() then
+		enterWorld()
+	else
+		render(true)
+	end
 end
 
 local function mutate(name: string, ...: any): ()
@@ -223,7 +248,7 @@ local function startStage(stageId: string, teamIndex: number, auto: boolean?): (
 	previous.currencies.Gems += result.rewards.Gems
 	previous.currencies.SummonTickets += result.rewards.SummonTickets
 
-	BattleViewController.playStory(result.replay, function(completed)
+	BattleViewController.playReplay(result.replay, function(completed)
 		busy = false
 		notice = ""
 		render(true)
@@ -236,12 +261,14 @@ local function startStage(stageId: string, teamIndex: number, auto: boolean?): (
 			end
 		end
 		StoryFlow.show(parent, result, lobbyUnlocked, function(visitedSummon)
-			if lobbyUnlocked then
+			if lobbyUnlocked and Lobby.available() then
+				enterWorld()
+			elseif lobbyUnlocked then
 				go("hub")
 			else
 				render(true)
 			end
-			if visitedSummon then
+			if visitedSummon and not (lobbyUnlocked and Lobby.available()) then
 				load()
 			end
 		end, nextRound)
@@ -288,51 +315,24 @@ render = function(preserveScroll: boolean?)
 		else Vector2.zero
 	Page.clear(page)
 	page.message.Text = notice
-	Controls.setEnabled(page.back, route ~= "hub" or onBack ~= nil)
 	local snapshot = data
+	local unlocked = snapshot ~= nil and snapshot.progression ~= nil and snapshot.progression.tutorialDone
+	Controls.setEnabled(page.back, route ~= "hub" or onBack ~= nil or (unlocked and Lobby.available()))
 	local first: TextButton?
 	if route == "hub" then
-		Page.label(
-			page.body,
-			if snapshot
-					and snapshot.progression
-					and snapshot.progression.tutorialDone
-				then "Arcanum Lobby"
-				else "Arcanum Academy"
-		)
-		first = Page.button(
-			page.body,
-			if snapshot
-					and snapshot.progression
-					and not snapshot.progression.tutorialDone
-				then "Continue onboarding"
-				else "Story",
-			function()
+		first = LobbyRoutes.directory(page, snapshot, unlocked, {
+			story = function()
 				go("story")
-			end
-		)
-		Page.button(page.body, "Inventory", function()
-			go("inventory")
-		end)
-		Page.button(page.body, "Summon", openSummon)
-		Page.button(page.body, "Team Board", openTeam)
-		Page.button(page.body, "Academy Shop", function()
-			MonetizationController.openShop(returnToHub)
-		end)
-		Page.button(page.body, "Battle Pass", function()
-			MonetizationController.openPass(returnToHub)
-		end)
-		if snapshot then
-			Page.label(
-				page.body,
-				string.format(
-					"Gold %d · Gems %d · Summon Tickets %d",
-					snapshot.currencies.Gold,
-					snapshot.currencies.Gems,
-					snapshot.currencies.SummonTickets
-				)
-			)
-		end
+			end,
+			inventory = function()
+				go("inventory")
+			end,
+			summon = openSummon,
+			team = openTeam,
+			resume = returnToHub,
+			world = enterWorld,
+			menu = onBack,
+		})
 	elseif not snapshot then
 		Page.label(page.body, "Your profile is unavailable.")
 	elseif route == "story" then
@@ -382,13 +382,13 @@ function ProgressController.open(returnToMenu: (() -> ())?): ()
 		pages.hub = Page.create(parent, "Play", back)
 		pages.story = Page.create(parent, "Story", back)
 		pages.inventory = Page.create(parent, "Inventory", back)
-		UserInputService.InputBegan:Connect(function(input, processed)
-			if not processed and pages[route].screen.Enabled and input.KeyCode == Enum.KeyCode.ButtonB then
-				back()
-			end
-		end)
+		for _, page in pages do
+			LobbyPage.bindBack(page.screen, back)
+		end
 		bindUpdates()
 	end
+	storyFromWorld = false
+	enterOnLoad = true
 	go("hub")
 	load()
 end

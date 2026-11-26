@@ -15,6 +15,7 @@ export type Progression = {
 
 export type Snapshot = {
 	progression: Progression?,
+	skinsOwned: { [string]: boolean }?,
 	currencies: Types.Currencies,
 	units: { [string]: Types.ClientOwnedUnit },
 	teams: { { name: string, slots: { string } } },
@@ -50,7 +51,7 @@ local errors: { [string]: string } = {
 	TUTORIAL_NOT_DONE = "Finish onboarding before dismantling units.",
 }
 
-local function request(name: string, ...: any): (any, string?)
+function ProgressRemote.request(name: string, ...: any): (any, string?)
 	local folder = ReplicatedStorage:WaitForChild(Remotes.FOLDER_NAME, 4)
 	local remote = folder and folder:WaitForChild(name, 4)
 	if not remote or not remote:IsA("RemoteFunction") then
@@ -89,6 +90,7 @@ function ProgressRemote.parseSnapshot(data: any): (Snapshot?, string?)
 		or type(data.story) ~= "table"
 		or type(data.story.cleared) ~= "table"
 		or type(data.currencies) ~= "table"
+		or (data.skinsOwned ~= nil and type(data.skinsOwned) ~= "table")
 		or (data.progression ~= nil and not validProgression(data.progression))
 	then
 		return nil, invalid
@@ -123,6 +125,11 @@ function ProgressRemote.parseSnapshot(data: any): (Snapshot?, string?)
 			end
 		end
 	end
+	for id, owned in data.skinsOwned or {} do
+		if type(id) ~= "string" or type(owned) ~= "boolean" then
+			return nil, invalid
+		end
+	end
 	for _, stars in data.story.cleared do
 		if type(stars) ~= "number" or stars < 0 or stars > 3 or stars % 1 ~= 0 then
 			return nil, invalid
@@ -132,7 +139,7 @@ function ProgressRemote.parseSnapshot(data: any): (Snapshot?, string?)
 end
 
 function ProgressRemote.snapshot(name: string, ...: any): (Snapshot?, string?)
-	local data, errorMessage = request(name, ...)
+	local data, errorMessage = ProgressRemote.request(name, ...)
 	if errorMessage then
 		return nil, errorMessage
 	end
@@ -140,7 +147,8 @@ function ProgressRemote.snapshot(name: string, ...: any): (Snapshot?, string?)
 end
 
 function ProgressRemote.startStage(stageId: string, teamIndex: number, auto: boolean?): (StageResult?, string?)
-	local data, errorMessage = request(if auto then "StartAutoReplay" else "StartStage", stageId, teamIndex)
+	local data, errorMessage =
+		ProgressRemote.request(if auto then "StartAutoReplay" else "StartStage", stageId, teamIndex)
 	if errorMessage then
 		return nil, errorMessage
 	end
