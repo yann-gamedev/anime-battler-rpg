@@ -59,6 +59,8 @@ local Constants = {
 		LockUnit = { max = 10, windowSec = 10 },
 		GetBannerInfo = { max = 6, windowSec = 10 },
 		Summon = { max = 2, windowSec = 3 },
+		GetTraitInfo = { max = 10, windowSec = 10 },
+		RerollTrait = { max = 3, windowSec = 3 },
 	} :: { [string]: RateLimitRule },
 
 	-- Batas panjang ID banner dari client (validasi bentuk sebelum lookup config).
