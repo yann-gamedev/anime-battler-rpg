@@ -23,6 +23,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 - [ ] Fondasi UI (Theme, komponen), Main Menu dipindah ke controller, Team Board 3×3 → `prompts/05-ui-team-board.md`
   - Build, tes draft dan sinergi, serta validasi latihan lokal lulus. Uji iPhone SE/tablet dan penyimpanan setelah rejoin di Studio masih tertunda.
 - [ ] Story 30 stage, reward, level & merge unit, inventory → `prompts/06-story-progression.md`
+  - Implementasi, build, dan tes lokal lulus. Uji onboarding, UI, serta persistensi setelah rejoin di Roblox Studio masih tertunda.
 
 ## M4 — Gacha & monetisasi
 - [ ] Banner, pity, layar odds, `ComplianceService` → `prompts/07-summon-banner.md`

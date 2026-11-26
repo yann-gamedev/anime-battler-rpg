@@ -24,6 +24,8 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-016 | 2026-11-26 | Parameter uji awal: langkah tiap 5 tick, slow sinergi Es 1 detik, reflect Garrick 3 detik, buff Aurelian 5 detik, radius Elodie dan Umbra 1 sel, dan roh Morvaine memakai 25% stat pemanggil | Dokumen desain belum menetapkan nilai ini. Nilai runtime ada di Config untuk penyesuaian balancing |
 | D-017 | 2026-11-26 | `StartTestBattle` memerlukan Studio dan UserId admin. Replay menghentikan jam simulasi pada tick cinematic | Membatasi jalur uji dan mempertahankan sinkronisasi event saat cinematic dilewati |
 | D-018 | 2026-11-26 | Tombol Start battle di Team Board membuka latihan tanpa reward melawan susunan stage 1-1. Perubahan tim disimpan sebelum latihan dimulai | Memberi alur battle yang dapat dimainkan sebelum progres story tersedia dan menjaga hasil berdasarkan formasi yang divalidasi server |
+| D-020 | 2026-11-26 | Progres story menambah material XP Scroll dan status progres melalui rekonsiliasi profil v1. Tutorial memberi 10 tiket sekali pada kemenangan, dan kemenangan 1-3 membuka lobby | Menggunakan mata uang dan flag onboarding yang sudah ada. Summon sungguhan mengikuti prompt 07 |
+| D-021 | 2026-11-26 | Gold/XP Scroll, biaya Gold merge, dan ambang slot papan memakai nilai sementara di `Config/Progression.luau`. Stage 1-1 sampai 1-3 memakai musuh pengantar (menggantikan D-011 untuk ketiga stage itu) | Dokumen ekonomi belum menentukan nilai ini. Simulasi menemukan lonjakan kesulitan mulai 1-4 |
 
 ## Keputusan terbuka (butuh manusia)
 

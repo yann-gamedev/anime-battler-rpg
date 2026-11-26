@@ -221,6 +221,8 @@ type Profile = {
 	teams: { { name: string, slots: { string } } }, -- 9 entri; "" = slot kosong
 	story: { cleared: { [string]: number } }, -- stageId → bintang 1..3
 	pity: { [string]: { sinceLegendary: number, sinceMythic: number } }, -- per bannerId
+	materials: { XPScrolls: number },
+	progress: { tutorialBattleCleared: boolean, firstThreeStarClaimed: { [string]: boolean }, replayDay: number, replayCount: number },
 	traitPity: number,                       -- reroll sejak Legendaris+ terakhir (UNITS §5)
 	tradeDaily: { day: number, count: number }, -- batas 10 trade/hari (SYSTEMS A2)
 	skinsOwned: { [string]: boolean },
@@ -244,6 +246,14 @@ Template default ada di `DataService/Template.luau`. Batas: maks 500 unit per pe
 3. Di Command Bar, ambil pemain dengan `local player = game:GetService("Players"):GetPlayers()[1]`, lalu ambil service dengan `local data = require(game:GetService("ServerScriptService").Server.Services.DataService)`. Jalankan `assert(data.adminAddGems(player, 100))` dan catat saldo dari `data.getProfile(player).currencies.Gems`.
 4. Stop dan Play lagi. Baca saldo dan pastikan tambahan 100 Gems tetap ada. `data.adminResetProfile(player)` mereset profil pemain penguji di store Studio. Kedua perintah hanya tersedia dari server bagi UserId yang diizinkan.
 5. Untuk tes Luau di Studio, set atribut Boolean `Workspace.RunTests` ke `true` sebelum Play dan cek ringkasan di Output.
+
+### Story dan inventory
+
+`StartStage(stageId, teamIndex)` menjalankan pertarungan untuk tim tersimpan. Bintang dan reward dihitung serta disimpan di server sebelum replay dikembalikan melalui respons. Jika tim masih kosong, stage `tutorial` memakai starter pemain tanpa mengubah slot tim yang tersimpan.
+
+`GetMyData`, `LevelUpUnit`, `MergeUnit`, `DismantleUnit`, dan `LockUnit` mengembalikan snapshot milik pemanggil saat berhasil. XP Scroll adalah material inventory. Field progres tambahan direkonsiliasi dalam skema v1, dan reward Gems pertama untuk 3★ diklaim bersama progres stage dalam satu mutasi profil.
+
+Di place uji dengan API Services aktif, mulai dari profil baru melalui Play → Onboarding. Menangkan tutorial dan cek 10 tiket. Isi tim, lalu selesaikan 1-1 sampai 1-3. Ulangi 1-1 dengan 3★ dan pastikan Gems pertama tidak diberikan lagi. Uji level up, lock, konfirmasi merge dan dismantle, lalu Stop → Play untuk memastikan progres tersimpan.
 
 ## 7. Studio build scripts (`studio/`)
 
