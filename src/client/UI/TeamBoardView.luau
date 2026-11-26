@@ -18,6 +18,7 @@ export type View = {
 	rosterScroll: ScrollingFrame,
 	cards: Frame,
 	count: TextLabel,
+	preset: TextButton,
 	cells: { TextButton },
 	synergy: TextLabel,
 	rosterMessage: TextLabel,
@@ -84,6 +85,8 @@ function TeamBoardView.create(parent: PlayerGui): View
 	local rosterScroll = Controls.scroll(UDim2.fromScale(1, 1), body)
 	local count = Controls.label("Front row at top", UDim2.new(1, 0, 0, Theme.lineHeight), boardScroll)
 	count.LayoutOrder = 1
+	local preset = Controls.button("Preset 1", UDim2.new(1, 0, 0, Theme.touch), boardScroll)
+	preset.LayoutOrder = 0
 
 	local boardHeight = COLUMNS * Theme.cellHeight + (COLUMNS - 1) * Theme.gap
 	local gridFrame = flowFrame(boardScroll, boardHeight, 2)
@@ -168,6 +171,7 @@ function TeamBoardView.create(parent: PlayerGui): View
 		rosterScroll = rosterScroll,
 		cards = cards,
 		count = count,
+		preset = preset,
 		cells = cells,
 		synergy = synergy,
 		rosterMessage = rosterMessage,

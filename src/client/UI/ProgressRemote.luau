@@ -139,8 +139,8 @@ function ProgressRemote.snapshot(name: string, ...: any): (Snapshot?, string?)
 	return ProgressRemote.parseSnapshot(data)
 end
 
-function ProgressRemote.startStage(stageId: string, teamIndex: number): (StageResult?, string?)
-	local data, errorMessage = request("StartStage", stageId, teamIndex)
+function ProgressRemote.startStage(stageId: string, teamIndex: number, auto: boolean?): (StageResult?, string?)
+	local data, errorMessage = request(if auto then "StartAutoReplay" else "StartStage", stageId, teamIndex)
 	if errorMessage then
 		return nil, errorMessage
 	end

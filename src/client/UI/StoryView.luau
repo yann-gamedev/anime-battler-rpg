@@ -12,7 +12,7 @@ local Remote = require(script.Parent.ProgressRemote)
 
 local StoryView = {}
 
-function StoryView.guide(body: ScrollingFrame, data: Remote.Snapshot): ()
+function StoryView.guide(body: ScrollingFrame, data: Remote.Snapshot, teamIndex: number): ()
 	local progression = data.progression
 	if not progression or progression.tutorialDone then
 		return
@@ -26,7 +26,7 @@ function StoryView.guide(body: ScrollingFrame, data: Remote.Snapshot): ()
 		return
 	end
 
-	local team = data.teams[1]
+	local team = data.teams[teamIndex]
 	local deployed: { Types.BattleUnitInput } = {}
 	if team then
 		for cell, uid in team.slots do
@@ -58,7 +58,8 @@ function StoryView.render(
 	play: (string) -> (),
 	openTeam: () -> (),
 	openSummon: () -> (),
-	focusStage: string?
+	focusStage: string?,
+	teamIndex: number
 ): TextButton
 	local first: TextButton? = nil
 	local progress = data.progression
@@ -68,20 +69,20 @@ function StoryView.render(
 		first = Page.button(page.body, "Start tutorial", function()
 			play("tutorial")
 		end)
-		StoryView.guide(page.body, data)
+		StoryView.guide(page.body, data, teamIndex)
 	else
 		if not progress.tutorialDone then
 			if data.currencies.SummonTickets > 0 then
 				first = Page.button(page.body, "Summon with free tickets", openSummon)
 			end
-			StoryView.guide(page.body, data)
+			StoryView.guide(page.body, data, teamIndex)
 		end
 		Page.label(
 			page.body,
 			string.format("Account Lv %d · %d board slots", progress.accountLevel, progress.maxBoardUnits)
 		)
 	end
-	local team = Page.button(page.body, "Team Board", openTeam)
+	local team = Page.button(page.body, "Team Board · Preset " .. teamIndex, openTeam)
 	local unlocked = progress ~= nil and progress.tutorialBattleCleared
 	local latest: TextButton? = nil
 	local preferred: TextButton? = nil
