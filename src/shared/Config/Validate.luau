@@ -18,6 +18,42 @@ local function checkTotal(total: number, source: string): ()
 	assert(math.abs(total - 100) < 1e-9, `{source}: odds must total 100%, got {total}%`)
 end
 
+local function isUnixSeconds(value: any): boolean
+	return type(value) == "number" and value >= 0 and value < 2 ^ 53 and math.floor(value) == value
+end
+
+-- Periode: Standard permanen; Limited [startsAt, endsAt) dengan panjang rotationDays dari config.
+local function checkPeriod(banner: Types.BannerDef, label: string): ()
+	if banner.kind == "Standard" then
+		assert(banner.startsAt == nil and banner.endsAt == nil, `{label}: standard banners are permanent`)
+		return
+	end
+	local startsAt, endsAt, days = banner.startsAt, banner.endsAt, banner.rotationDays
+	assert(isUnixSeconds(startsAt) and isUnixSeconds(endsAt), `{label}: limited period is missing`)
+	assert(type(days) == "number" and days > 0, `{label}: rotationDays is missing`)
+	assert(
+		(endsAt :: number) - (startsAt :: number) == days * Banners.secondsPerDay,
+		`{label}: period must last rotationDays`
+	)
+end
+
+-- Jaminan pity hanya valid jika rarity tujuannya punya peluang.
+local function checkGuarantees(banner: Types.BannerDef, label: string): ()
+	local odds = banner.oddsPercent
+	assert(odds.Mythic > 0, `{label}: hard pity needs Mythic odds`)
+	assert(odds.Legendary + odds.Mythic > 0, `{label}: Legendary+ pity needs odds`)
+	local minimum = Banners.multiSummonGuarantee.minimumRarity
+	local reachable = 0
+	local counted = minimum == "Rare"
+	for _, rarity in { "Rare", "Epic", "Legendary", "Mythic" } :: { Types.Rarity } do
+		counted = counted or rarity == minimum
+		if counted then
+			reachable += odds[rarity]
+		end
+	end
+	assert(reachable > 0, `{label}: multi-summon guarantee needs odds`)
+end
+
 local Validate = {}
 
 function Validate.run(
@@ -66,7 +102,15 @@ function Validate.run(
 			assert(banner.oddsPercent[rarity] > 0, `{label}: featured rarity has zero odds`)
 			assert(share == 100 or poolSizes[rarity] > 1, `{label}: no other units in featured rarity`)
 		end
+		checkPeriod(banner, label)
+		checkGuarantees(banner, label)
 	end
+	local multi = Banners.multiSummonGuarantee
+	assert(Economy.summonGems[1] and Economy.summonGems[multi.count], "Economy: summon Gems prices are missing")
+	assert(
+		Economy.rarityMultipliers[multi.minimumRarity :: Types.Rarity],
+		"Banners: unknown multi-summon minimum rarity"
+	)
 
 	local total = 0
 	for tier, def in traitTiers or Traits.tiers do
