@@ -22,6 +22,7 @@ local Progress = require(script.Progress)
 local ProfileRules = require(script.ProfileRules)
 local Summons = require(script.Summons)
 local Template = require(script.Template)
+local Traits = require(script.Traits)
 
 type Session = {
 	Data: Types.Profile,
@@ -42,8 +43,7 @@ local DataService = {}
 
 -- Changed(player, path): path = "units" | "currencies" | "teams" | "progress".
 DataService.Changed = Signal.new() :: Signal.Signal<Player, string>
--- Mutasi progres story & inventory yang atomik (DataService/Progress.luau).
-DataService.progress = Progress
+DataService.progress = Progress -- mutasi progres story & inventory atomik (DataService/Progress.luau)
 
 local sessions: { [Player]: Session } = {}
 local loading: { [Player]: boolean } = {}
@@ -58,6 +58,7 @@ local function getActiveSession(player: Player): Session?
 end
 
 DataService.summons = Summons.create(getActiveSession, DataService.Changed) -- mutasi summon atomik
+DataService.traits = Traits.create(getActiveSession, DataService.Changed) -- mutasi reroll trait atomik
 
 local function getProfile(player: Player): Types.Profile?
 	local session = getActiveSession(player)
@@ -225,7 +226,6 @@ function DataService.getOwnedUidSet(player: Player): { [string]: boolean }?
 	end
 	return owned
 end
-
 local isLabel = Validate.isStringMax(128)
 
 local function changeCurrency(
