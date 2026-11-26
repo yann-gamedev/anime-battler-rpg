@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Types = require(Shared.Types)
 local Signal = require(Shared.Util.Signal)
+local Skins = require(Shared.Config.Skins)
 local TableUtil = require(Shared.Util.TableUtil)
 local ProgressionRules = require(Shared.ProgressionRules)
 local RemoteSetup = require(script.Parent.Parent.Parent.Net.RemoteSetup)
@@ -37,6 +38,18 @@ function Replication.progression(profile: Types.Profile): Types.ProgressionData
 	}
 end
 
+-- Skin milik pemain: hanya entri true dengan ID yang ada di Config/Skins.
+local function clientSkins(profile: Types.Profile): { [string]: boolean }
+	local owned: { [string]: boolean } = {}
+	local stored = if type(profile.skinsOwned) == "table" then profile.skinsOwned else {}
+	for skinId in Skins do
+		if stored[skinId] == true then
+			owned[skinId] = true
+		end
+	end
+	return owned
+end
+
 -- Snapshot aman untuk pemilik profil (bukan profil penuh).
 function Replication.buildMyData(profile: Types.Profile): Types.MyData
 	return {
@@ -46,6 +59,7 @@ function Replication.buildMyData(profile: Types.Profile): Types.MyData
 		story = TableUtil.deepCopy(profile.story),
 		pity = TableUtil.deepCopy(profile.pity),
 		progression = Replication.progression(profile),
+		skinsOwned = clientSkins(profile),
 	}
 end
 

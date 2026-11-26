@@ -52,7 +52,13 @@ local function simulate(
 
 	local teamB: { Types.BattleUnitInput } = {}
 	for _, enemy in enemyDef.enemies do
-		table.insert(teamB, { unitId = enemy.unitId, stars = enemy.stars, level = enemy.level, cell = enemy.slot })
+		table.insert(teamB, {
+			unitId = enemy.unitId,
+			stars = enemy.stars,
+			level = enemy.level,
+			cell = enemy.slot,
+			hpMultiplier = enemy.hpMultiplier,
+		})
 	end
 	local seed = seedGenerator:NextInteger(1, 2147483647)
 	local result = BattleSim.run({ teamA = teamA, teamB = teamB, seed = seed })

@@ -4,6 +4,7 @@ local Banners = require(script.Parent.Banners)
 local BattlePass = require(script.Parent.BattlePass)
 local Constants = require(script.Parent.Constants)
 local Economy = require(script.Parent.Economy)
+local MetaValidate = require(script.Parent.MetaValidate)
 local Products = require(script.Parent.Products)
 local Progression = require(script.Parent.Progression)
 local ProfileFrames = require(script.Parent.ProfileFrames)
@@ -239,6 +240,7 @@ function Validate.run(
 	end
 	assert(Stages.byId[Progression.ONBOARDING_FINAL_STAGE_ID], "Progression: unknown onboarding stage")
 	Validate.shop()
+	MetaValidate.run()
 	assert(#Progression.MERGE_GOLD == #Economy.mergeDuplicates, "Progression: merge Gold must match star steps")
 	for unitId, cell in Progression.TUTORIAL_STARTER_CELLS do
 		assert(unitDefs[unitId] and cell >= 1 and cell <= Constants.BOARD_SLOTS, `Progression: bad starter {unitId}`)

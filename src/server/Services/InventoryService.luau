@@ -11,6 +11,7 @@ local Constants = require(Shared.Config.Constants)
 local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Config.Progression)
 local Validate = require(script.Parent.Parent.Util.Validate)
+local Activity = require(script.Parent.Parent.Util.Activity)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
 local DataService = require(script.Parent.DataService)
 
@@ -47,7 +48,11 @@ local function handleLevelUp(player: Player, uid: any, levels: any, ...: any): T
 	if not Validate.isIntInRange(levels, 1, Constants.UNIT_LEVEL_MAX - Constants.UNIT_LEVEL_MIN) then
 		return failure("INVALID_LEVELS")
 	end
-	return respond(player, DataService.progress.levelUpUnit(player, uid, levels))
+	local code = DataService.progress.levelUpUnit(player, uid, levels)
+	if code == nil then
+		Activity.report(player, "unit_level", levels) -- progres quest setelah commit level up
+	end
+	return respond(player, code)
 end
 
 local function handleMerge(player: Player, targetUid: any, materialUids: any, ...: any): Types.Result

@@ -33,6 +33,13 @@ function Template.create(now: number): Types.Profile
 		-- Field additive v1 (prompt 09); profil lama dilengkapi ShopRules.reconcile.
 		purchases = { firstBonus = {}, academy = {} },
 		battlePass = { seasons = {}, profileFrames = {} },
+		-- Field additive v1 (prompt 10); profil lama dilengkapi MetaRules.reconcile.
+		quests = {
+			daily = { key = "", progress = {}, claimed = {} },
+			weekly = { key = "", progress = {}, claimed = {} },
+		},
+		raid = { day = 0, attempted = false, damage = 0 },
+		lobby = { showcaseUid = "", showcaseSkinId = "" },
 	}
 end
 

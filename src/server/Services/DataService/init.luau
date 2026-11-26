@@ -19,24 +19,17 @@ local Replication = require(script.Replication)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local BattlePass = require(script.BattlePass)
+local Meta = require(script.Meta)
 local Migrations = require(script.Migrations)
 local Progress = require(script.Progress)
 local ProfileRules = require(script.ProfileRules)
 local Purchases = require(script.Purchases)
+local SessionTypes = require(script.SessionTypes)
 local Summons = require(script.Summons)
 local Template = require(script.Template)
 local Traits = require(script.Traits)
 
-type Session = {
-	Data: Types.Profile,
-	FirstSessionTime: number,
-	OnSessionEnd: { Connect: (any, () -> ()) -> any },
-	IsActive: (Session) -> boolean,
-	AddUserId: (Session, number) -> (),
-	Reconcile: (Session) -> (),
-	EndSession: (Session) -> (),
-	Save: (Session) -> (),
-}
+type Session = SessionTypes.Session
 
 local IS_STUDIO = RunService:IsStudio()
 local LOAD_TIMEOUT_SECONDS = 120
@@ -63,6 +56,7 @@ end
 DataService.summons = Summons.create(getActiveSession, DataService.Changed) -- mutasi summon atomik
 DataService.traits = Traits.create(getActiveSession, DataService.Changed) -- mutasi reroll trait atomik
 DataService.battlePass = BattlePass.create(getActiveSession, DataService.Changed) -- XP & klaim battle pass
+DataService.meta = Meta.create(getActiveSession, DataService.Changed) -- quest, raid, pajangan lobby
 -- Receipt + Toko Akademi. Hanya DataStore asli (bukan mock ProfileStore) yang dianggap bukti simpan.
 DataService.purchases = Purchases.create(getActiveSession :: any, DataService.Changed, {
 	isDurable = function(): boolean
@@ -158,6 +152,7 @@ local function onPlayerAdded(player: Player): ()
 	local activeSession = session
 	-- Stage migration and reconciliation on a copy so a failed step cannot be persisted.
 	local data = session.Data
+	local isNewProfile = false
 	local prepared, failure = pcall(function()
 		activeSession.Data = TableUtil.deepCopy(data)
 		Migrations.run(activeSession.Data)
@@ -169,6 +164,7 @@ local function onPlayerAdded(player: Player): ()
 		end
 		Progress.reconcile(profile)
 		if profile.createdAt == 0 then
+			isNewProfile = true
 			profile.createdAt = activeSession.FirstSessionTime
 			if next(profile.units) == nil then
 				grantStarterUnits(profile)
@@ -193,6 +189,9 @@ local function onPlayerAdded(player: Player): ()
 		end
 	end)
 	sessions[player] = session
+	if isNewProfile then
+		AnalyticsService.logNewProfile(player) -- langkah 1 funnel onboarding, setelah sesi aktif
+	end
 end
 
 local function onPlayerRemoving(player: Player): ()
@@ -256,7 +255,7 @@ local function changeCurrency(
 		return false
 	end
 	profile.currencies[kind] = balance
-	AnalyticsService.logCurrencyChange(player.UserId, kind, if spend then -amount else amount, source)
+	AnalyticsService.logEconomy(player, kind, if spend then -amount else amount, balance, source)
 	DataService.Changed:Fire(player, "currencies")
 	return true
 end

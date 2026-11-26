@@ -1,5 +1,6 @@
 --!strict
 -- Tipe global proyek. Skema data mengikuti docs/ARCHITECTURE.md §6 (versi 1).
+local MetaTypes = require(script.Parent.MetaTypes)
 local ShopTypes = require(script.Parent.ShopTypes)
 
 export type Result = {
@@ -90,7 +91,7 @@ export type StageDef = {
 	id: string,
 	chapter: number,
 	index: number,
-	enemies: { { unitId: string, slot: number, level: number, stars: number } },
+	enemies: { { unitId: string, slot: number, level: number, stars: number, hpMultiplier: number? } }, -- hp: raid
 	firstThreeStarGems: number,
 }
 
@@ -175,6 +176,10 @@ export type Profile = {
 		profileFrames: { [string]: boolean }?,
 		profileFrameId: string?,
 	},
+	-- Field additive prompt 10 (tanpa migrasi, dilengkapi MetaRules.reconcile).
+	quests: MetaTypes.QuestRecord,
+	raid: MetaTypes.RaidRecord,
+	lobby: MetaTypes.LobbyRecord,
 }
 
 -- Field additive prompt 09 (tanpa migrasi, dilengkapi ShopRules.reconcile).
@@ -213,6 +218,7 @@ export type MyData = {
 	story: { cleared: { [string]: number } },
 	pity: { [string]: PityRecord },
 	progression: ProgressionData,
+	skinsOwned: { [string]: boolean }, -- hanya skin di Config/Skins yang dimiliki (prompt 10)
 }
 
 export type StageRewards = { Gold: number, Gems: number, XPScrolls: number, SummonTickets: number }
@@ -236,7 +242,15 @@ export type TeamBoardData = {
 }
 
 export type BattleSide = "A" | "B"
-export type BattleUnitInput = { unitId: string, stars: number, level: number, trait: string?, cell: number }
+-- hpMultiplier (opsional, >= 1) hanya untuk musuh dari config server, mis. boss raid.
+export type BattleUnitInput = {
+	unitId: string,
+	stars: number,
+	level: number,
+	trait: string?,
+	cell: number,
+	hpMultiplier: number?,
+}
 export type BattleInput = {
 	teamA: { BattleUnitInput },
 	teamB: { BattleUnitInput },
@@ -279,6 +293,9 @@ export type BattleResult = {
 	log: { BattleEvent },
 	survivors: { BattleUnitSnapshot },
 }
+
+-- Data sukses StartRaid(teamIndex).
+export type RaidResultData = { raid: RaidInfo, damage: number, rewards: RewardMap, replay: BattleResult }
 
 -- Data sukses StartStage(stageId, teamIndex).
 export type StageResultData = {
@@ -368,5 +385,15 @@ export type BattlePassTierDef = ShopTypes.BattlePassTierDef
 export type BattlePassSeasonDef = ShopTypes.BattlePassSeasonDef
 export type PassTierView = ShopTypes.PassTierView
 export type PassInfo = ShopTypes.PassInfo
+
+-- Lobby, quest, dan raid (prompt 10): definisi di MetaTypes.luau.
+export type QuestPeriod = MetaTypes.QuestPeriod
+export type ActivityKind = MetaTypes.ActivityKind
+export type RewardMap = MetaTypes.RewardMap
+export type QuestDef = MetaTypes.QuestDef
+export type RaidRecord = MetaTypes.RaidRecord
+export type QuestInfo = MetaTypes.QuestInfo
+export type RaidInfo = MetaTypes.RaidInfo
+export type LobbyInfo = MetaTypes.LobbyInfo
 
 return table.freeze({})

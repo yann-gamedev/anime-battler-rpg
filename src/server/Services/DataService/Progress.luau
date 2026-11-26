@@ -7,6 +7,7 @@ local Types = require(Shared.Types)
 local Signal = require(Shared.Util.Signal)
 local Commit = require(script.Parent.Commit)
 local InventoryRules = require(script.Parent.InventoryRules)
+local MetaRules = require(script.Parent.MetaRules)
 local Replication = require(script.Parent.Replication)
 local ShopRules = require(script.Parent.ShopRules)
 local StoryRules = require(script.Parent.StoryRules)
@@ -28,6 +29,7 @@ end
 function Progress.reconcile(profile: Types.Profile): ()
 	StoryRules.reconcile(profile)
 	ShopRules.reconcile(profile)
+	MetaRules.reconcile(profile)
 end
 
 local function commit(player: Player, mutate: Mutation): (string?, Outcome?)
