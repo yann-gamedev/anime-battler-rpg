@@ -15,6 +15,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 
 ## M2 — Battle
 - [ ] `BattleSim` deterministik + sinergi + 15 ultimate + test → `prompts/03-battle-sim.md`
+  - Implementasi, build, dan suite Luau lulus. Benchmark 6 vs 6 pada Roblox Studio masih tertunda.
 - [ ] `BattleService` + `BattleViewController` (replay dengan model placeholder) → `prompts/04-battle-view.md`
 
 ## M3 — UI & progres

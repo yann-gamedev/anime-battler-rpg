@@ -40,6 +40,10 @@ local Constants = {
 	BASE_CRIT_CHANCE = 0.05,
 	BASE_CRIT_DAMAGE_MULTIPLIER = 1.5,
 	BATTLE_MAX_SECONDS = 90,
+	BATTLE_TICKS_PER_SECOND = 10,
+	BATTLE_MOVE_TICKS = 5,
+	BATTLE_ICE_SLOW_SECONDS = 1,
+	DAMAGE_DEFENSE_BASE = 100,
 
 	-- Rate limit per pemain per remote. Setiap RemoteFunction WAJIB punya entri di sini.
 	RATE_LIMITS = {

@@ -159,19 +159,20 @@ Client: StartStage(stageId, teamId)
   └─► Server BattleService
         1. validasi tim & stage
         2. seed = Random.new():NextInteger(...)
-        3. result = BattleSim.run(teamA, teamB, seed)   -- murni data, instan
+        3. result = BattleSim.run({ teamA = teamA, teamB = teamB, seed = seed })
         4. beri reward berdasarkan result.winner
         5. kirim { seed, log, winner, rewards } ke client
 Client BattleViewController
   └─► memutar `log` (urutan event) dengan model & animasi
 ```
 
-- `BattleSim` **tidak** menyentuh Instance, `workspace`, atau waktu nyata. Input = tabel unit + seed, output = `{ winner, log, ticks }`. Fixed tick (mis. 10 tick/detik), batas maks 900 tick (90 detik) → seri jika habis.
+- `BattleSim` menerima tabel unit dan seed. Hasilnya `{ winner, log, ticks, survivors }`. Simulasi berjalan dalam 10 tick per detik, dengan batas 900 tick (90 detik) yang menghasilkan seri jika kedua tim masih hidup.
+- Input menggunakan sel 1–9 per tim, dihitung dari baris depan. Log memakai sel 1–18 pada papan gabungan 3 kolom × 6 baris. Sel awal A = `10 - cell`, sel awal B = `9 + cell`. Log `spawn` memberi ID battle dan HP awal. Unit panggilan memiliki ID sendiri dan field `owner`.
 - Karena deterministik, PvP async dan Perang Wilayah memakai sim yang sama dengan snapshot tim pertahanan.
 - Bentuk event log (contoh):
   ```lua
-  { t = 12, kind = "attack", src = 3, dst = 7, dmg = 140, crit = false }
-  { t = 40, kind = "ultimate", src = 1, skill = "seraphine_dawn", targets = {7, 8} }
+  { t = 12, kind = "attack", src = 3, dst = 7, dmg = 140, crit = false, hp = 300, shield = 0 }
+  { t = 40, kind = "ultimate", src = 1, skill = "seraphine_dawn", cell = 12, targets = {7, 8}, cinematic = true }
   { t = 41, kind = "death", unit = 8 }
   ```
 - Ada test di `tests/BattleSim.spec.luau`: seed sama → hasil sama.

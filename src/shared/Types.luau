@@ -177,4 +177,49 @@ export type TeamBoardData = {
 	maxUnits: number,
 }
 
+export type BattleSide = "A" | "B"
+export type BattleUnitInput = { unitId: string, stars: number, level: number, trait: string?, cell: number }
+export type BattleInput = {
+	teamA: { BattleUnitInput },
+	teamB: { BattleUnitInput },
+	seed: number,
+	maxTicks: number?,
+}
+export type BattleUnitSnapshot = { id: number, unitId: string, side: BattleSide, cell: number, hp: number, maxHp: number }
+export type BattleEvent =
+	{
+		t: number,
+		kind: "spawn",
+		unit: number,
+		unitId: string,
+		side: BattleSide,
+		cell: number,
+		hp: number,
+		maxHp: number,
+		owner: number?,
+	}
+	| { t: number, kind: "move", unit: number, cell: number, leap: boolean }
+	| {
+		t: number,
+		kind: "attack" | "damage",
+		src: number,
+		dst: number,
+		dmg: number,
+		crit: boolean,
+		hp: number,
+		shield: number,
+	}
+	| { t: number, kind: "heal" | "shield", unit: number, hp: number, shield: number }
+	| { t: number, kind: "ultimate", src: number, skill: string, cell: number, targets: { number }, cinematic: boolean }
+	| { t: number, kind: "status", unit: number, effect: string, untilTick: number }
+	| { t: number, kind: "revive", unit: number, hp: number }
+	| { t: number, kind: "death" | "despawn", unit: number }
+
+export type BattleResult = {
+	winner: BattleSide | "draw",
+	ticks: number,
+	log: { BattleEvent },
+	survivors: { BattleUnitSnapshot },
+}
+
 return table.freeze({})

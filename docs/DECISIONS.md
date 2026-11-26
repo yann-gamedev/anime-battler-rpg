@@ -19,6 +19,9 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-011 | 2026-11-26 | Stage awal memakai tiga musuh placeholder per bab dengan level 1–30 mengikuti urutan stage | Prompt 01 mengizinkan musuh sementara. Gold dan XP Scroll per stage menunggu angka reward di task story |
 | D-012 | 2026-11-26 | ProfileStore dipasang melalui `lm-loleris/profilestore@1.0.3` di `ServerPackages` | Paket server Wally untuk dependency yang sudah disetujui pada D-008 |
 | D-013 | 2026-11-26 | Sebelum penyimpanan persisten pertama, tim v1 memakai sembilan slot string dengan `""` untuk sel kosong | ProfileStore mensyaratkan array numerik tanpa celah. SessionStore sebelumnya hanya menyimpan data di memori |
+| D-014 | 2026-11-26 | BattleSim memakai xorshift32 dengan state terpisah per battle. Seed dinormalisasi ke 32 bit, dan state nol memakai konstanta nonnol | Hasil replay dapat diuji dengan seed yang sama tanpa bergantung pada RNG global |
+| D-015 | 2026-11-26 | Jarak memakai Manhattan pada papan gabungan. Range tetap sesuai definisi kelas. Tiap Familiar yang memenuhi sinergi dapat bangkit satu kali | Menetapkan aturan grid dan interpretasi revive untuk implementasi awal |
+| D-016 | 2026-11-26 | Parameter uji awal: langkah tiap 5 tick, slow sinergi Es 1 detik, reflect Garrick 3 detik, buff Aurelian 5 detik, radius Elodie dan Umbra 1 sel, dan roh Morvaine memakai 25% stat pemanggil | Dokumen desain belum menetapkan nilai ini. Nilai runtime ada di Config untuk penyesuaian balancing |
 
 ## Keputusan terbuka (butuh manusia)
 
