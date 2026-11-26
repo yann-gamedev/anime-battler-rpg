@@ -126,7 +126,8 @@ end
 sign(board, "Announcements")
 prompt(board, "Announcements", "Announcements")
 
-block("TradingPlaza", 23, 0.02, 21, Vector3.new(22, 0.1, 16), slate)
+local tradingPlaza = block("TradingPlaza", 23, 0.02, 21, Vector3.new(22, 0.1, 16), slate)
+prompt(tradingPlaza, "Trade", "Trading Plaza")
 local plaza = block("PlazaSign", 23, 2.2, 29, Vector3.new(7, 2, 0.5), stone, true)
 sign(plaza, "Trading Plaza")
 
