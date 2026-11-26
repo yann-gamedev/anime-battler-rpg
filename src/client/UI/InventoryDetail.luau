@@ -10,6 +10,7 @@ local SynergyResolver = require(Shared.BattleSim.SynergyResolver)
 local Page = require(script.Parent.ProgressPage)
 local Remote = require(script.Parent.ProgressRemote)
 local TeamBoardView = require(script.Parent.TeamBoardView)
+local TraitView = require(script.Parent.TraitView)
 local Controls = require(script.Parent.Components.Controls)
 
 local InventoryDetail = {}
@@ -32,7 +33,8 @@ function InventoryDetail.render(
 	teamIndex: number,
 	onAction: (string, ...any) -> (),
 	onSelect: (string) -> (),
-	inTeam: boolean
+	inTeam: boolean,
+	trait: TraitView.State
 ): TextButton
 	local def = Units[unit.unitId]
 	Page.label(body, InventoryDetail.describeUnit(unit))
@@ -129,6 +131,7 @@ function InventoryDetail.render(
 	if unit.locked or inTeam or def.rarity == "Mythic" then
 		Page.label(body, "Locked, deployed, and Mythic units cannot be dismantled.")
 	end
+	TraitView.render(body, unit, snapshot.currencies.TraitShards, trait, onAction)
 	return lock
 end
 

@@ -80,11 +80,7 @@ local function validProgression(data: any): boolean
 		and type(data.tutorialDone) == "boolean"
 end
 
-function ProgressRemote.snapshot(name: string, ...: any): (Snapshot?, string?)
-	local data, errorMessage = request(name, ...)
-	if errorMessage then
-		return nil, errorMessage
-	end
+function ProgressRemote.parseSnapshot(data: any): (Snapshot?, string?)
 	local invalid = "Unexpected profile data. Reload your profile."
 	if
 		type(data) ~= "table"
@@ -133,6 +129,14 @@ function ProgressRemote.snapshot(name: string, ...: any): (Snapshot?, string?)
 		end
 	end
 	return data, nil
+end
+
+function ProgressRemote.snapshot(name: string, ...: any): (Snapshot?, string?)
+	local data, errorMessage = request(name, ...)
+	if errorMessage then
+		return nil, errorMessage
+	end
+	return ProgressRemote.parseSnapshot(data)
 end
 
 function ProgressRemote.startStage(stageId: string, teamIndex: number): (StageResult?, string?)

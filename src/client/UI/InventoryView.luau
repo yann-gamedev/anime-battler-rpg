@@ -7,6 +7,7 @@ local Units = require(Shared.Config.Units)
 local InventoryDetail = require(script.Parent.InventoryDetail)
 local Page = require(script.Parent.ProgressPage)
 local Remote = require(script.Parent.ProgressRemote)
+local TraitView = require(script.Parent.TraitView)
 local Controls = require(script.Parent.Components.Controls)
 local Modal = require(script.Parent.Components.Modal)
 local UnitCard = require(script.Parent.Components.UnitCard)
@@ -75,6 +76,7 @@ function InventoryView.render(
 	page: Page.Page,
 	snapshot: Remote.Snapshot,
 	state: State,
+	trait: TraitView.State,
 	onAction: (string, ...any) -> (),
 	refresh: (boolean?) -> ()
 ): TextButton?
@@ -107,7 +109,7 @@ function InventoryView.render(
 				state.selected[target.uid] = true
 			end
 			refresh()
-		end, saved[target.uid] == true)
+		end, saved[target.uid] == true, trait)
 	end
 
 	local mode = state.mode
