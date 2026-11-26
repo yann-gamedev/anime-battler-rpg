@@ -2,6 +2,7 @@
 -- Aturan murni validasi papan tim (tanpa Instance, bisa di-test).
 -- Dipakai TeamService di server; client boleh memakai untuk umpan balik UI saja.
 local Constants = require(script.Parent.Config.Constants)
+local Products = require(script.Parent.Config.Products)
 
 export type FailureCode = "INVALID_SLOTS" | "UNIT_NOT_OWNED" | "DUPLICATE_UNIT" | "TOO_MANY_UNITS"
 
@@ -57,6 +58,17 @@ function TeamRules.validateSlots(slots: any, ownedByUid: { [string]: boolean }, 
 		return false, "TOO_MANY_UNITS"
 	end
 	return true, nil
+end
+
+-- Indeks preset tim yang sah: integer 1..(TEAM_PRESETS_BASE + extraPresets). extraPresets dari cache
+-- gamepass server (0 atau Config/Products.extraPresetsWithPass); nilai lain dianggap 0.
+function TeamRules.isTeamIndex(value: any, extraPresets: number): boolean
+	local extra = if extraPresets == Products.extraPresetsWithPass then extraPresets else 0
+	return typeof(value) == "number"
+		and value == value
+		and math.floor(value) == value
+		and value >= 1
+		and value <= Constants.TEAM_PRESETS_BASE + extra
 end
 
 return table.freeze(TeamRules)

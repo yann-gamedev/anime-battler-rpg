@@ -14,8 +14,7 @@ local Constants = {
 	BOARD_UNITS_START = 3,
 	BOARD_UNITS_MAX = 6,
 
-	-- Jumlah preset tim dasar. Irisan Team Board ini hanya memakai tim 1.
-	-- (Gamepass gp_presets +6 belum diimplementasi, docs/ECONOMY.md.)
+	-- Jumlah preset tim dasar. Gamepass gp_presets menambah Config/Products.extraPresetsWithPass.
 	TEAM_PRESETS_BASE = 1,
 	DEFAULT_TEAM_NAME = "Tim 1",
 
@@ -62,10 +61,18 @@ local Constants = {
 		GetTraitInfo = { max = 10, windowSec = 10 },
 		RerollTrait = { max = 3, windowSec = 3 },
 		SelectRestrictedTrait = { max = 3, windowSec = 3 },
+		StartAutoReplay = { max = 1, windowSec = 3 },
+		GetShopInfo = { max = 6, windowSec = 10 },
+		PrepareShopPurchase = { max = 3, windowSec = 5 },
+		BuyAcademyItem = { max = 3, windowSec = 5 },
+		GetBattlePass = { max = 6, windowSec = 10 },
+		ClaimBattlePassTier = { max = 5, windowSec = 5 },
 	} :: { [string]: RateLimitRule },
 
 	-- Batas panjang ID banner dari client (validasi bentuk sebelum lookup config).
 	MAX_BANNER_ID_LENGTH = 64,
+	-- Batas panjang key produk / item Toko Akademi dari client.
+	MAX_SHOP_KEY_LENGTH = 64,
 	-- PolicyService gagal → dianggap restricted (fail-closed) dan dicoba lagi setelah jeda ini.
 	-- Hasil sukses di-cache sampai PlayerRemoving.
 	POLICY_RETRY_SECONDS = 60,
