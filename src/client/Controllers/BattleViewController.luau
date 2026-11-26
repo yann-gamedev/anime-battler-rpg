@@ -37,6 +37,7 @@ type Session = {
 	view: Hud.View,
 	result: Types.BattleResult,
 	restoreUI: () -> (),
+	onClosed: (() -> ())?,
 	connections: { RBXScriptConnection },
 	frame: RBXScriptConnection?,
 	clock: BattleReplay.Clock,
@@ -106,6 +107,9 @@ local function close(session: Session): ()
 		camera.Focus = session.priorCamera.focus
 		camera.CameraType = session.priorCamera.kind
 	end
+	if session.onClosed then
+		session.onClosed()
+	end
 end
 
 local function startCinematic(session: Session, event: Types.BattleEvent): boolean
@@ -131,6 +135,10 @@ end
 
 local function finish(session: Session): ()
 	session.ended = true
+	if session.onClosed then
+		close(session)
+		return
+	end
 	Renderer.clearEffects(session.scene)
 	local view = session.view
 	view.resultTitle.Text = if session.result.winner == "A"
@@ -193,14 +201,17 @@ local function tick(session: Session, delta: number): ()
 	end
 end
 
-local function begin(result: Types.BattleResult): ()
+local function begin(result: Types.BattleResult, onClosed: (() -> ())?): boolean
+	if active and active.onClosed then
+		return false
+	end
 	local model = Workspace:FindFirstChild(Arena.modelName)
 	local origin = model and model:FindFirstChild(Arena.originName)
 	local camera = Workspace.CurrentCamera
 	local gui = PLAYER:FindFirstChildOfClass("PlayerGui")
 	if not origin or not origin:IsA("BasePart") or not camera or not gui or not gui:IsA("PlayerGui") then
 		warn("[BattleReplay] Arena, CurrentCamera or PlayerGui is missing.")
-		return
+		return false
 	end
 
 	if active then
@@ -216,6 +227,7 @@ local function begin(result: Types.BattleResult): ()
 		scene = Renderer.new(origin),
 		view = view,
 		result = result,
+		onClosed = onClosed,
 		connections = {},
 		priorCamera = {
 			kind = camera.CameraType,
@@ -282,8 +294,37 @@ local function begin(result: Types.BattleResult): ()
 	tick(session, 0)
 	if active == session then
 		session.frame = RunService.PreRender:Connect(function(delta)
-			tick(session, delta)
+			if session.onClosed then
+				local ok, failure = pcall(tick, session, delta)
+				if not ok then
+					warn("[BattleReplay] " .. tostring(failure))
+					close(session)
+				end
+			else
+				tick(session, delta)
+			end
 		end)
+	end
+	return true
+end
+
+function BattleViewController.playStory(result: Types.BattleResult, onClosed: () -> ()): ()
+	local delivered = false
+	local function deliver()
+		if not delivered then
+			delivered = true
+			task.defer(onClosed)
+		end
+	end
+	local ok, started = pcall(begin, result, deliver)
+	if not ok then
+		warn("[BattleReplay] " .. tostring(started))
+		if active and active.onClosed == deliver then
+			close(active)
+		end
+	end
+	if not ok or not started then
+		deliver()
 	end
 end
 
@@ -296,7 +337,9 @@ function BattleViewController.start(): ()
 			return
 		end
 		-- One listener persists for this LocalScript. All per-replay resources are closed separately.
-		event.OnClientEvent:Connect(begin)
+		event.OnClientEvent:Connect(function(result: Types.BattleResult)
+			begin(result)
+		end)
 	end)
 end
 

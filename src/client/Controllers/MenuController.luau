@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Theme = require(script.Parent.Parent.UI.Theme)
 local UIController = require(script.Parent.UIController)
-local TeamBoardController = require(script.Parent.TeamBoardController)
+local ProgressController = require(script.Parent.ProgressController)
 
 local MenuController = {}
 
@@ -39,7 +39,7 @@ function MenuController.start(): ()
 	local screen = playerGui:WaitForChild("MainMenu", 5)
 	if not screen or not screen:IsA("ScreenGui") then
 		warn("[Menu] MainMenu missing. Run studio/ui/build_main_menu.luau in Studio edit mode.")
-		TeamBoardController.open(nil)
+		ProgressController.open(nil)
 		return
 	end
 
@@ -80,7 +80,7 @@ function MenuController.start(): ()
 	end
 
 	playButton.Activated:Connect(function()
-		TeamBoardController.open(showMenu)
+		ProgressController.open(showMenu)
 	end)
 	settingsButton.Activated:Connect(function()
 		menu.Visible = false

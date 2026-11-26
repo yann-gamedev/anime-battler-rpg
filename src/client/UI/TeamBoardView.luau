@@ -213,7 +213,7 @@ local function describe(tier: Types.SynergyDef): string
 	return ""
 end
 
-function TeamBoardView.setSynergies(view: View, active: SynergyResolver.Active): ()
+function TeamBoardView.describeSynergies(active: SynergyResolver.Active): string
 	local lines: { string } = {}
 	for name, tier in active.elements do
 		if tier then
@@ -226,8 +226,13 @@ function TeamBoardView.setSynergies(view: View, active: SynergyResolver.Active):
 		end
 	end
 	table.sort(lines)
-	view.synergy.Text = if #lines > 0 then table.concat(lines, "\n") else "No active synergies"
-	view.synergy.TextColor3 = if #lines > 0 then Theme.text else Theme.muted
+	return table.concat(lines, "\n")
+end
+
+function TeamBoardView.setSynergies(view: View, active: SynergyResolver.Active): ()
+	local description = TeamBoardView.describeSynergies(active)
+	view.synergy.Text = if description ~= "" then description else "No active synergies"
+	view.synergy.TextColor3 = if description ~= "" then Theme.text else Theme.muted
 end
 
 return table.freeze(TeamBoardView)
