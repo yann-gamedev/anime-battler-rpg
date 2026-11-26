@@ -8,6 +8,7 @@ local Types = require(Shared.Types)
 local Signal = require(Shared.Util.Signal)
 local TableUtil = require(Shared.Util.TableUtil)
 local AnalyticsService = require(script.Parent.Parent.AnalyticsService)
+local MetaRules = require(script.Parent.MetaRules)
 local ShopRules = require(script.Parent.ShopRules)
 local StoryRules = require(script.Parent.StoryRules)
 
@@ -32,6 +33,9 @@ function Commit.run(
 	local draft = TableUtil.deepCopy(original)
 	StoryRules.reconcile(draft)
 	ShopRules.reconcile(draft)
+	MetaRules.reconcile(draft)
+	-- Baseline analytics dari draft yang sudah direkonsiliasi (bukan profil mentah).
+	local baseline = AnalyticsService.baseline(draft)
 	local thread = coroutine.create(mutate)
 	local ok, code, outcome = coroutine.resume(thread, draft)
 	if coroutine.status(thread) ~= "dead" then
@@ -50,9 +54,7 @@ function Commit.run(
 		return "DATA_NOT_READY", nil
 	end
 	session.Data = draft
-	for _, delta in outcome.deltas do
-		AnalyticsService.logCurrencyChange(player.UserId, delta.kind, delta.amount, delta.source)
-	end
+	AnalyticsService.logCommit(player, baseline, outcome.deltas, draft)
 	if outcome.units then
 		changed:Fire(player, "units")
 	end

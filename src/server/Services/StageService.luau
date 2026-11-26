@@ -15,6 +15,7 @@ local TeamRules = require(Shared.TeamRules)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
 local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
+local Activity = require(script.Parent.Parent.Util.Activity)
 local BattleService = require(script.Parent.BattleService)
 local BattlePassService = require(script.Parent.BattlePassService)
 local DataService = require(script.Parent.DataService)
@@ -119,6 +120,9 @@ local function runStage(player: Player, autoReplay: boolean, stageId: any, teamI
 	if stars > 0 and not ProgressionRules.isTutorial(stageId) then
 		-- Commit terpisah: kegagalan XP (mis. di luar musim) tidak membatalkan hasil stage.
 		BattlePassService.awardStoryWin(player)
+		-- Progres quest hanya setelah hasil battle server ter-commit (bukan dari replay client).
+		Activity.report(player, "story_win", 1)
+		Activity.report(player, "story_stars", stars)
 	end
 	local progression = DataService.progress.getProgression(player)
 	if not progression then

@@ -271,9 +271,19 @@ Uji di place Studio yang dipublikasikan. Buka Inventory → detail unit, periksa
 
 `MonetizationService` memasang satu callback `MarketplaceService.ProcessReceipt`. DataService menyimpan grant, bonus awal per paket Gems, statistik belanja, dan marker `PurchaseId` bersama. Callback mengembalikan `PurchaseGranted` setelah marker muncul di `LastSavedData`. `GetShopInfo` dan `PrepareShopPurchase(productKey)` mengirim data untuk tombol pembelian. `BuyAcademyItem(itemId)` memakai harga Gems dari katalog server dan berlaku juga untuk pemain restricted.
 
-`GetBattlePass()` mengirim progres musim dan hak pemain. `ClaimBattlePassTier(track, tier, unitId?)` memeriksa XP, Premium, dan kelayakan hadiah di server. Kemenangan story menambah XP musim. Implementasi quest pada prompt 10 memanggil `BattlePassService.grantQuestXp(player, questId, amount)` dari server setelah klaim quest berhasil. Bingkai profil yang telah diklaim disimpan di profil dan tampil di halaman Battle Pass.
+`GetBattlePass()` mengirim progres musim dan hak pemain. `ClaimBattlePassTier(track, tier, unitId?)` memeriksa XP, Premium, dan kelayakan hadiah di server. Kemenangan story menambah XP musim. Sejak prompt 10, DataService menyimpan XP Battle Pass aktif bersamaan dengan reward dan status klaim quest. Bingkai profil yang telah diklaim disimpan di profil dan tampil di halaman Battle Pass.
 
 Di place Studio pengujian, jalankan suite dengan `Workspace.RunTests`, lalu buka Toko Akademi dengan override restricted. Beli unit dan skin, cek saldo dan kepemilikan, lalu ulangi setelah rejoin. Uji kontrol gamepass dengan UserId admin melalui `MonetizationService.adminSetPass(player, key, owned)` dari Server Command Bar. Verifikasi auto-replay pada stage 3★, kontrol 2×, slot preset, serta aura. Gunakan Developer Product dan GamePass khusus pengujian untuk memeriksa prompt, receipt, bonus Gems pertama, dan klaim Premium. ID produksi tetap 0 sampai pemilik place mengonfigurasinya.
+
+### Lobby, quest, dan Boss Raid
+
+Setelah Story 1-3, `LobbyService` membuka pajangan dan `RaidService` membuka Boss Raid. `SetLobbyShowcase(uid, skinId?)` memvalidasi kepemilikan unit, kepemilikan skin, dan kecocokan skin dengan unit. Server mereplikasi satu model per karakter. Client menggerakkan `Root.IdleJoint` dan menampilkan aura VIP secara lokal sesuai pengaturan grafis. Skin model saat ini memakai variasi warna dan material placeholder.
+
+`GetQuests()` dan `ClaimQuest(questId, periodKey)` mengembalikan progres, reward, dan waktu reset berdasarkan jam server. Quest harian reset 00:00 UTC, dan quest mingguan reset Senin 00:00 UTC. Progres berasal dari Signal server setelah aktivitas berhasil. Status klaim, mata uang, dan XP Battle Pass aktif dikomit bersama.
+
+`GetRaidInfo()` mengirim status percobaan hari UTC ini. `StartRaid(teamIndex)` menyimulasikan pertarungan dengan tim tersimpan. Server membatasi damage terkredit ke HP boss dan menyimpan percobaan, damage, serta reward tier tertinggi dalam satu mutasi. Replay hanya memvisualisasikan hasil tersebut.
+
+`AnalyticsService` mengirim funnel onboarding, perubahan mata uang beserta saldo akhir, dan event summon, pembelian, klaim quest, raid, serta durasi sesi ke Roblox Analytics. Untuk uji penerimaan, publikasikan build ke place pengujian privat, jalankan alur onboarding dan satu siklus quest/raid, lalu periksa kategori Funnel, Economy, dan Custom di Creator Dashboard.
 
 ## 7. Studio build scripts (`studio/`)
 
@@ -288,6 +298,14 @@ Di place Studio pengujian, jalankan suite dengan `Workspace.RunTests`, lalu buka
 2. Di place pengujian dengan akses DataStore Studio, jalankan Device Emulation untuk iPhone SE dan tablet. Uji Play, Settings, Music, Back, Quit, serta fokus gamepad.
 3. Di Team Board, gabungkan dua filter lalu kosongkan lagi. Tempatkan Kael dan Pip untuk melihat sinergi Api, lalu pindahkan dan hapus salah satu unit. Uji tap di perangkat sentuh dan drag kartu ke slot dengan mouse.
 4. Susun dan simpan tiga unit, lalu Stop → Play. Pastikan ketiga slot kembali terisi. Tekan **Start battle** untuk memulai replay latihan. Jika ada perubahan belum disimpan, UI menyimpannya dahulu dan hanya memulai battle jika server menerima tim.
+
+### Uji Lobby Arcanum di Studio
+
+1. Sinkronkan Rojo di mode Edit. Jalankan `studio/ui/build_main_menu.luau`, `studio/world/build_arena.luau`, dan `studio/world/build_lobby.luau` dari Command Bar. Jalankan ulang builder lobby dan pastikan hanya satu `Workspace.ArcanumLobby` yang dihasilkan, dengan `AcademySpawn` aktif.
+2. Selesaikan Story 1-3 dengan profil uji. Buka courtyard lewat Play dan uji rute Story, Summon, Shop, Quest, Raid, dan Announcements. Uji sentuhan, keyboard (E di stasiun, M untuk menu), serta gamepad (X di stasiun, Y untuk menu, A untuk memilih, B untuk kembali).
+3. Siapkan dua atau lebih client. Pilih unit pajangan, coba skin yang dimiliki, lalu periksa replika, idle, dan aura VIP dari client lain. Ulangi setelah ganti pilihan, respawn, dan rejoin. Coba Low graphics, nonaktifkan cinematic saat replay, lalu uji Music dan SFX dengan aset asli yang dikonfigurasi di `Config/Assets.luau` atau `Sound` tanpa SoundGroup dengan atribut `AudioCategory` bernilai `Music` atau `SFX`.
+4. Buka quest harian dan mingguan, selesaikan satu target, dan pastikan hadiah hanya masuk sekali. Uji halaman yang melewati 00:00 UTC dan batas Senin. Jalankan raid, tutup replay lebih awal, lalu coba lagi setelah rejoin. Pastikan hasil server tetap tampil dan percobaan kedua ditolak dalam hari yang sama.
+5. Gunakan Server & Clients di Studio untuk uji replikasi sampai delapan client. Untuk target sepuluh pemain, pakai place uji privat dengan pajangan aktif dan ukur lewat Performance Stats atau MicroProfiler di perangkat sasaran. Target 60 FPS setara sekitar 16,7 ms per frame. [Mode pengujian Roblox Studio](https://create.roblox.com/docs/studio/testing-modes).
 
 ## 8. Konfigurasi sebagai data
 

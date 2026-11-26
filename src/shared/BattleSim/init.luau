@@ -35,6 +35,16 @@ local function addTeam(fight: State.Fight, input: { Types.BattleUnitInput }, sid
 			isIntegerInRange(member.level, Constants.UNIT_LEVEL_MIN, Constants.UNIT_LEVEL_MAX),
 			"Invalid battle unit level"
 		)
+		local hpMultiplier = member.hpMultiplier
+		assert(
+			hpMultiplier == nil
+				or (
+					type(hpMultiplier) == "number"
+					and hpMultiplier >= 1
+					and hpMultiplier <= Constants.BATTLE_HP_MULTIPLIER_MAX
+				),
+			"Invalid battle unit hpMultiplier"
+		)
 		occupied[member.cell] = true
 		table.insert(ordered, member)
 		assert(#ordered <= Constants.BOARD_UNITS_MAX, "Battle team exceeds unit limit")
@@ -44,13 +54,17 @@ local function addTeam(fight: State.Fight, input: { Types.BattleUnitInput }, sid
 	end)
 	local synergy = SynergyResolver.resolve(ordered)
 	for _, member in ordered do
+		local stats = Stats.compute(member, synergy)
+		if member.hpMultiplier then
+			stats.hp *= member.hpMultiplier -- boss raid: HP besar dari config server
+		end
 		Combat.spawn(
 			fight,
 			Units[member.unitId],
 			side,
 			member.cell,
 			Targeting.startCell(side, member.cell),
-			Stats.compute(member, synergy),
+			stats,
 			synergy,
 			nil,
 			nil
