@@ -12,10 +12,14 @@ local TraitRules = require(script.Parent.TraitRules)
 
 export type Request = TraitRules.Request
 export type Result = TraitRules.Result
+export type DirectRequest = TraitRules.DirectRequest
+export type DirectResult = TraitRules.DirectResult
 export type UnitState = { traitId: string?, locked: boolean }
-export type State = { shards: number, sinceLegendary: number, unit: UnitState }
+export type State = { shards: number, gold: number, sinceLegendary: number, unit: UnitState }
 export type Ledger = {
 	apply: (player: Player, request: Request) -> (string?, Result?),
+	-- Pilihan trait langsung dengan Gold (pemain restricted, D-OPEN-1).
+	applyDirect: (player: Player, request: DirectRequest) -> (string?, DirectResult?),
 	-- (kode, state): DATA_NOT_READY bila sesi belum siap, UNIT_NOT_OWNED bila uid bukan milik pemain.
 	getState: (player: Player, uid: string) -> (string?, State?),
 	getMyData: (player: Player) -> Types.MyData?,
@@ -28,6 +32,19 @@ function Traits.create(getSession: Commit.SessionGetter, changed: Signal.Signal<
 		local result: Result? = nil
 		local code = Commit.run(getSession, changed, player, function(draft: Types.Profile)
 			local failure, outcome, applied = TraitRules.apply(draft, request)
+			result = applied
+			return failure, outcome
+		end)
+		if code ~= nil then
+			return code, nil
+		end
+		return nil, result
+	end
+
+	local function applyDirect(player: Player, request: DirectRequest): (string?, DirectResult?)
+		local result: DirectResult? = nil
+		local code = Commit.run(getSession, changed, player, function(draft: Types.Profile)
+			local failure, outcome, applied = TraitRules.applyDirect(draft, request)
 			result = applied
 			return failure, outcome
 		end)
@@ -50,6 +67,7 @@ function Traits.create(getSession: Commit.SessionGetter, changed: Signal.Signal<
 		return nil,
 			{
 				shards = profile.currencies.TraitShards,
+				gold = profile.currencies.Gold,
 				sinceLegendary = TraitRules.readPity(profile.traitPity),
 				unit = { traitId = TraitRules.readTrait(unit.trait), locked = unit.locked ~= false },
 			}
@@ -60,7 +78,7 @@ function Traits.create(getSession: Commit.SessionGetter, changed: Signal.Signal<
 		return if session then Replication.buildMyData(session.Data) else nil
 	end
 
-	return { apply = apply, getState = getState, getMyData = getMyData }
+	return { apply = apply, applyDirect = applyDirect, getState = getState, getMyData = getMyData }
 end
 
 return table.freeze(Traits)

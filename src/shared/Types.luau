@@ -306,6 +306,10 @@ export type TraitOddsEntry = { id: string, name: string, percent: number }
 export type TraitTierOdds = { tier: TraitTier, percent: number, traits: { TraitOddsEntry } }
 export type TraitOdds = { tiers: { TraitTierOdds } }
 
+export type TraitDirectTier = "Common" | "Uncommon"
+export type TraitDirectOption = { id: string, name: string, tier: TraitDirectTier, cost: number }
+export type TraitDirect = { gold: number, options: { TraitDirectOption } }
+
 -- Data sukses GetTraitInfo(uid). `odds` = peluang aktual reroll berikutnya (termasuk pity).
 export type TraitInfo = {
 	uid: string,
@@ -316,6 +320,8 @@ export type TraitInfo = {
 	cost: number,
 	pity: { sinceLegendary: number, rolls: number },
 	odds: TraitOdds,
+	-- Hanya untuk pemain restricted: pilihan trait langsung dengan Gold (D-OPEN-1).
+	direct: TraitDirect?,
 }
 
 -- Data sukses RerollTrait(uid).
