@@ -15,7 +15,7 @@ function Template.create(now: number): Types.Profile
 		currencies = { Gold = 0, Gems = 0, TraitShards = 0, SummonTickets = 0, AsramaTokens = 0 },
 		accountLevel = 1,
 		units = {},
-		teams = { { name = Constants.DEFAULT_TEAM_NAME, slots = {} } },
+		teams = { { name = Constants.DEFAULT_TEAM_NAME, slots = table.create(Constants.BOARD_SLOTS, "") } },
 		story = { cleared = {} },
 		pity = {},
 		traitPity = 0,

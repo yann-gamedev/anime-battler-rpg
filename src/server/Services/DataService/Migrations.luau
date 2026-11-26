@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Constants = require(ReplicatedStorage:WaitForChild("Shared").Config.Constants)
+local Validate = require(script.Parent.Parent.Parent.Util.Validate)
 
 local Migrations = {}
 
@@ -12,9 +13,9 @@ local steps: { [number]: (profile: any) -> () } = {
 }
 
 -- Menjalankan migrasi berurutan sampai DATA_VERSION. Error jika ada langkah yang hilang.
-function Migrations.run(profile: any)
+function Migrations.run(profile: any): ()
 	local current = profile.version
-	assert(typeof(current) == "number", "profile.version tidak valid")
+	assert(Validate.isInt(current) and current >= 1, "profile.version tidak valid")
 	assert(current <= Constants.DATA_VERSION, "profile.version lebih baru dari server")
 	while current < Constants.DATA_VERSION do
 		local step = steps[current]

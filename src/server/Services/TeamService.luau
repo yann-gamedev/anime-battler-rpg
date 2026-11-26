@@ -89,7 +89,11 @@ local function handleSaveTeam(player: Player, teamIndex: any, slots: any): Types
 	if not DataService.setTeamSlots(player, teamIndex, slots) then
 		return failure("SAVE_FAILED")
 	end
-	return { ok = true, data = buildBoardData(profile, teamIndex) }
+	local savedProfile = DataService.getProfile(player)
+	if not savedProfile then
+		return failure("DATA_NOT_READY")
+	end
+	return { ok = true, data = buildBoardData(savedProfile, teamIndex) }
 end
 
 function TeamService.init()

@@ -43,6 +43,7 @@ local Constants = {
 
 	-- Rate limit per pemain per remote. Setiap RemoteFunction WAJIB punya entri di sini.
 	RATE_LIMITS = {
+		GetMyData = { max = 5, windowSec = 10 },
 		GetTeamBoard = { max = 10, windowSec = 10 },
 		SaveTeam = { max = 5, windowSec = 10 },
 	} :: { [string]: RateLimitRule },

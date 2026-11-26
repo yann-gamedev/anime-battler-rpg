@@ -17,6 +17,8 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-009 | 2026-11-26 | Slot papan & tiket serangan tidak dijual | Pemain gratis tetap bermakna di mode kompetitif |
 | D-010 | 2026-11-26 | Banner Limited contoh menampilkan Seraphine sebagai featured, dan Seraphine tetap ada di pool Standar | Prompt 01 meminta contoh featured, sedangkan ECONOMY §2 mencantumkan Seraphine dalam contoh peluang Standar |
 | D-011 | 2026-11-26 | Stage awal memakai tiga musuh placeholder per bab dengan level 1–30 mengikuti urutan stage | Prompt 01 mengizinkan musuh sementara. Gold dan XP Scroll per stage menunggu angka reward di task story |
+| D-012 | 2026-11-26 | ProfileStore dipasang melalui `lm-loleris/profilestore@1.0.3` di `ServerPackages` | Paket server Wally untuk dependency yang sudah disetujui pada D-008 |
+| D-013 | 2026-11-26 | Sebelum penyimpanan persisten pertama, tim v1 memakai sembilan slot string dengan `""` untuk sel kosong | ProfileStore mensyaratkan array numerik tanpa celah. SessionStore sebelumnya hanya menyimpan data di memori |
 
 ## Keputusan terbuka (butuh manusia)
 

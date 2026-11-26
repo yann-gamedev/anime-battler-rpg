@@ -6,7 +6,5 @@ realm = "shared"
 private = true
 
 # Satu-satunya dependency yang disetujui: ProfileStore (docs/ARCHITECTURE.md §1).
-# Belum ditambahkan: nama/versi paket Wally ProfileStore belum diverifikasi.
-# Jika tidak tersedia lewat Wally, taruh modul resmi di src/server/Vendor/ProfileStore.luau
-# dan catat sumber + versinya di docs/DECISIONS.md (prompts/00-setup.md).
 [server-dependencies]
+ProfileStore = "lm-loleris/profilestore@1.0.3"

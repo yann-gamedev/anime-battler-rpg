@@ -11,6 +11,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 ## M1 — Fondasi data
 - [x] `Types.luau` + semua `Config/` awal dari `docs/UNITS.md` & `docs/ECONOMY.md` → `prompts/01-types-config.md`
 - [ ] `DataService` dengan ProfileStore, template, migrasi, API mutasi → `prompts/02-data-service.md`
+  - Implementasi, build, dan tes Luau lokal lulus. Verifikasi Stop → Play dengan DataStore pada place Studio pengujian masih tertunda.
 
 ## M2 — Battle
 - [ ] `BattleSim` deterministik + sinergi + 15 ultimate + test → `prompts/03-battle-sim.md`

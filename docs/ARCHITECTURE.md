@@ -13,6 +13,8 @@
 
 Dependency yang disetujui: **ProfileStore** (data pemain, session locking). Package lain harus disetujui manusia dan dicatat di `docs/DECISIONS.md`.
 
+Jalankan `wally install` sebelum `rojo serve` atau `rojo build`. Rojo memetakan `ServerPackages` ke `ServerScriptService`, sehingga ProfileStore hanya tersedia di server.
+
 ## 2. Struktur folder
 
 ```
@@ -195,7 +197,7 @@ type Profile = {
 	currencies: { Gold: number, Gems: number, TraitShards: number, SummonTickets: number, AsramaTokens: number },
 	accountLevel: number,                    -- dari progres story; syarat trade (SYSTEMS A2)
 	units: { [string]: OwnedUnit },          -- key = uid
-	teams: { { name: string, slots: { [number]: string? } } }, -- slot 1..9 → uid
+	teams: { { name: string, slots: { string } } }, -- 9 entri; "" = slot kosong
 	story: { cleared: { [string]: number } }, -- stageId → bintang 1..3
 	pity: { [string]: { sinceLegendary: number, sinceMythic: number } }, -- per bannerId
 	traitPity: number,                       -- reroll sejak Legendaris+ terakhir (UNITS §5)
@@ -211,6 +213,16 @@ type Profile = {
 ```
 
 Template default ada di `DataService/Template.luau`. Batas: maks 500 unit per pemain (konstanta di `Constants.luau`).
+
+`DataService.getProfile(player)` memberi snapshot beku. Panggil lagi setelah mutasi untuk membaca nilai terbaru. `GetMyData` mengirim mata uang, inventaris, tim, progres story, dan pity milik pemanggil. `InventoryChanged` dan `CurrencyChanged` mengirim snapshot terbaru hanya ke pemain tersebut.
+
+### Uji penyimpanan di Studio
+
+1. Gunakan place pengujian yang sudah dipublikasikan dan aktifkan **Enable Studio Access to API Services**. DataService memakai `PlayerProfiles_Studio` di Studio dan `PlayerProfiles_Live` di server live.
+2. Masukkan UserId penguji ke `Constants.ADMIN_USER_IDS` di checkout lokal. Jalankan Play Solo dengan Command Bar dalam konteks **Server** dan pastikan profil sudah dimuat.
+3. Di Command Bar, ambil pemain dengan `local player = game:GetService("Players"):GetPlayers()[1]`, lalu ambil service dengan `local data = require(game:GetService("ServerScriptService").Server.Services.DataService)`. Jalankan `assert(data.adminAddGems(player, 100))` dan catat saldo dari `data.getProfile(player).currencies.Gems`.
+4. Stop dan Play lagi. Baca saldo dan pastikan tambahan 100 Gems tetap ada. `data.adminResetProfile(player)` mereset profil pemain penguji di store Studio. Kedua perintah hanya tersedia dari server bagi UserId yang diizinkan.
+5. Untuk tes Luau di Studio, set atribut Boolean `Workspace.RunTests` ke `true` sebelum Play dan cek ringkasan di Output.
 
 ## 7. Studio build scripts (`studio/`)
 

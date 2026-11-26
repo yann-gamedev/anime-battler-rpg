@@ -109,8 +109,10 @@ export type OwnedUnit = {
 
 export type Team = {
 	name: string,
-	slots: { [number]: string? }, -- slot 1..9 → uid (sparse)
+	slots: { string }, -- slot 1..9, "" = kosong; dense agar dapat disimpan
 }
+
+export type CurrencyKind = "Gold" | "Gems" | "TraitShards" | "SummonTickets" | "AsramaTokens"
 
 export type Currencies = {
 	Gold: number,
@@ -137,6 +139,24 @@ export type Profile = {
 	stats: { battles: number, wins: number, summons: number, robuxSpent: number },
 	flags: { tutorialDone: boolean },
 	createdAt: number,
+}
+
+export type ClientOwnedUnit = {
+	uid: string,
+	unitId: string,
+	stars: number,
+	level: number,
+	xp: number,
+	trait: string?,
+	locked: boolean,
+}
+
+export type MyData = {
+	currencies: Currencies,
+	units: { [string]: ClientOwnedUnit },
+	teams: { Team },
+	story: { cleared: { [string]: number } },
+	pity: { [string]: { sinceLegendary: number, sinceMythic: number } },
 }
 
 -- Bentuk data aman yang dikirim ke client untuk Team Board (bukan profil penuh).
