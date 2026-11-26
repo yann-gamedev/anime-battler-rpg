@@ -8,6 +8,7 @@ local Types = require(Shared.Types)
 local Constants = require(Shared.Config.Constants)
 local Units = require(Shared.Config.Units)
 local TeamRules = require(Shared.TeamRules)
+local ProgressionRules = require(Shared.ProgressionRules)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
 local DataService = require(script.Parent.DataService)
@@ -22,8 +23,8 @@ local function failure(code: string): Types.Result
 end
 
 -- Batas unit di papan. Akan naik lewat progres story (GDD §6), BUKAN pembelian.
-function TeamService.getMaxBoardUnits(_profile: Types.Profile): number
-	return math.min(Constants.BOARD_UNITS_START, Constants.BOARD_UNITS_MAX)
+function TeamService.getMaxBoardUnits(profile: Types.Profile): number
+	return ProgressionRules.maxBoardUnits(profile.story.cleared)
 end
 
 local function buildBoardData(profile: Types.Profile, teamIndex: number): Types.TeamBoardData

@@ -122,6 +122,17 @@ export type Currencies = {
 	AsramaTokens: number,
 }
 
+-- Field additive (tanpa migrasi, dilengkapi reconcile v1): bahan non-mata-uang.
+export type Materials = { XPScrolls: number }
+
+-- Field additive: status onboarding & progres story server-side.
+export type StoryProgress = {
+	tutorialBattleCleared: boolean, -- battle tutorial dimenangkan, 10 Summon Tickets sudah diberikan
+	firstThreeStarClaimed: { [string]: boolean }, -- stageId → Gems first-clear 3★ sudah diklaim
+	replayDay: number, -- hari UTC (os.time() // 86400) untuk counter replay
+	replayCount: number, -- jumlah replay menang pada replayDay
+}
+
 export type Profile = {
 	version: number,
 	currencies: Currencies,
@@ -139,6 +150,8 @@ export type Profile = {
 	stats: { battles: number, wins: number, summons: number, robuxSpent: number },
 	flags: { tutorialDone: boolean },
 	createdAt: number,
+	materials: Materials,
+	progress: StoryProgress,
 }
 
 export type ClientOwnedUnit = {
@@ -151,13 +164,24 @@ export type ClientOwnedUnit = {
 	locked: boolean,
 }
 
+export type ProgressionData = {
+	accountLevel: number,
+	maxBoardUnits: number,
+	xpScrolls: number,
+	tutorialBattleCleared: boolean,
+	tutorialDone: boolean,
+}
+
 export type MyData = {
 	currencies: Currencies,
 	units: { [string]: ClientOwnedUnit },
 	teams: { Team },
 	story: { cleared: { [string]: number } },
 	pity: { [string]: { sinceLegendary: number, sinceMythic: number } },
+	progression: ProgressionData,
 }
+
+export type StageRewards = { Gold: number, Gems: number, XPScrolls: number, SummonTickets: number }
 
 -- Bentuk data aman yang dikirim ke client untuk Team Board (bukan profil penuh).
 export type TeamBoardUnit = {
@@ -220,6 +244,16 @@ export type BattleResult = {
 	ticks: number,
 	log: { BattleEvent },
 	survivors: { BattleUnitSnapshot },
+}
+
+-- Data sukses StartStage(stageId, teamIndex).
+export type StageResultData = {
+	stageId: string,
+	replay: BattleResult,
+	stars: number,
+	rewards: StageRewards,
+	firstThreeStar: boolean,
+	progression: ProgressionData,
 }
 
 return table.freeze({})
