@@ -30,10 +30,13 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-023 | 2026-11-26 | `guaranteedFeatured` ditambahkan ke record pity v1. Banner Limited contoh aktif 26 November sampai sebelum 10 Desember 2026 UTC | Menyimpan jaminan featured berikutnya dan membatasi rotasi contoh ke 14 hari |
 | D-024 | 2026-11-26 | PolicyService sukses di-cache selama sesi. Kegagalan lookup memblokir Gems dan dapat dicoba kembali setelah 60 detik | Menjaga pembatasan paid random items saat layanan kebijakan tidak merespons |
 | D-025 | 2026-11-26 | Pemain restricted dapat memilih trait Biasa atau Langka langsung dengan Gold (menutup D-OPEN-1) | Jalur deterministik memakai Gold dari gameplay. Harga balancing awal 200 Gold untuk Biasa dan 600 Gold untuk Langka ada di `Config/Traits.luau` |
-
 | D-026 | 2026-11-26 | Grant dari Developer Product, bonus pembelian pertama, dan marker receipt dikomit bersama. Receipt diakui setelah marker muncul di `LastSavedData` | Retry tidak menggandakan hadiah dan Roblox dapat mengirim ulang receipt yang belum tersimpan |
 | D-027 | 2026-11-26 | Toko Akademi memakai harga tetap awal 150 Gems untuk Kael, 300 Gems untuk Selene, dan 250 Gems untuk skin Academy Scholar. Setiap entri dibeli satu kali per akun dan tersedia untuk pemain restricted | Jalur pembelian langsung dengan biaya dan isi yang diketahui sebelum konfirmasi |
 | D-028 | 2026-11-26 | SKU Premium terikat ke ID musim. Musim contoh s1 berdurasi 28 hari dengan 30 tier. Klaim hanya selama musim aktif. Bingkai Akademi dari tier 30 Premium tetap dimiliki setelah musim berakhir | Menjaga kredit dari receipt tertunda pada musim asal dan memberi batas waktu klaim yang bisa ditampilkan di UI |
+| D-029 | 2026-11-26 | Quest harian reset 00:00 UTC dan quest mingguan reset Senin 00:00 UTC. Profil menyimpan satu periode aktif dari setiap jenis | Reset seragam lintas zona waktu dan ukuran record profil tetap terbatas |
+| D-030 | 2026-11-26 | Mata uang, XP Battle Pass aktif, dan status klaim quest disimpan dalam satu mutasi. Semua quest dapat diselesaikan tanpa summon | Retry aman dan pemain restricted mendapat sumber Gems yang sama |
+| D-031 | 2026-11-26 | Raid terbuka setelah Story 1-3. Satu percobaan gratis per hari UTC memberi reward tier tertinggi berdasarkan damage server yang dibatasi HP boss | Aktivitas harian tanpa pembelian. Target tier tertinggi 50 Gems di `Config/Raids.luau` |
+| D-032 | 2026-11-26 | Server mereplikasi satu model pajangan ringan dengan skin placeholder. Client menggerakkan idle dan menggambar aura VIP | Tampilan bisa dilihat pemain lain dengan biaya rendering yang bisa dikurangi lewat Low graphics |
 
 ## Keputusan terbuka (butuh manusia)
 

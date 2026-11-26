@@ -34,8 +34,9 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
   - Implementasi, review keamanan terfokus, build, dan tes Luau lokal lulus. Uji transaksi Roblox, simpan/muat ulang profil, dan navigasi perangkat di Studio masih tertunda.
 
 ## M5 — Lobby & siap soft launch
-- [ ] Lobby sosial, pajangan unit, quest harian/mingguan, boss raid, analytics → `prompts/10-lobby-quests.md`
-- [ ] Review keamanan semua service sensitif → `prompts/review-security.md`
+- [x] Lobby sosial, pajangan unit, quest harian/mingguan, boss raid, analytics → `prompts/10-lobby-quests.md`
+  - Build dan tes lokal lulus. Uji 60 FPS dengan 10 pemain, data profil asli, dan event di Creator Dashboard menunggu place uji.
+- [x] Review sumber service sensitif → `prompts/review-security.md` ([hasil review](M5-SECURITY-REVIEW.md))
 - [ ] **SOFT LAUNCH MVP** (uji dengan teman, pantau metrik di GDD §12)
 
 ## M6 — Trade
