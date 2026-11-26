@@ -9,7 +9,7 @@ local Controls = require(UI.Components.Controls)
 local Theme = require(UI.Theme)
 local UIController = require(script.Parent.UIController)
 
-export type Route = "Story" | "Summon" | "Shop" | "Quests" | "Raid" | "Announcements" | "Directory"
+export type Route = "Story" | "Summon" | "Shop" | "Quests" | "Raid" | "Announcements" | "Directory" | "Trade"
 type Routes = { [Route]: () -> () }
 
 local LobbyController = {}
@@ -67,6 +67,7 @@ function LobbyController.start(): ()
 			or action == "Quests"
 			or action == "Raid"
 			or action == "Announcements"
+			or action == "Trade"
 		then
 			dispatch(action)
 		end
