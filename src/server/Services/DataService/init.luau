@@ -9,6 +9,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Types = require(Shared.Types)
 local Constants = require(Shared.Config.Constants)
+local Products = require(Shared.Config.Products)
 local Units = require(Shared.Config.Units)
 local Signal = require(Shared.Util.Signal)
 local TableUtil = require(Shared.Util.TableUtil)
@@ -17,9 +18,11 @@ local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
 local Replication = require(script.Replication)
 local Validate = require(script.Parent.Parent.Util.Validate)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local BattlePass = require(script.BattlePass)
 local Migrations = require(script.Migrations)
 local Progress = require(script.Progress)
 local ProfileRules = require(script.ProfileRules)
+local Purchases = require(script.Purchases)
 local Summons = require(script.Summons)
 local Template = require(script.Template)
 local Traits = require(script.Traits)
@@ -59,6 +62,15 @@ end
 
 DataService.summons = Summons.create(getActiveSession, DataService.Changed) -- mutasi summon atomik
 DataService.traits = Traits.create(getActiveSession, DataService.Changed) -- mutasi reroll trait atomik
+DataService.battlePass = BattlePass.create(getActiveSession, DataService.Changed) -- XP & klaim battle pass
+-- Receipt + Toko Akademi. Hanya DataStore asli (bukan mock ProfileStore) yang dianggap bukti simpan.
+DataService.purchases = Purchases.create(getActiveSession :: any, DataService.Changed, {
+	isDurable = function(): boolean
+		return ProfileStore.DataStoreState == "Access" and not ProfileStore.IsClosing
+	end,
+})
+DataService.isReceiptProcessed = DataService.purchases.isReceiptProcessed
+DataService.markReceiptProcessed = DataService.purchases.markReceiptProcessed
 
 local function getProfile(player: Player): Types.Profile?
 	local session = getActiveSession(player)
@@ -336,38 +348,25 @@ function DataService.updateUnit(player: Player, uid: string, mutator: (Types.Own
 	return true
 end
 
-local function isReceiptId(purchaseId: string): boolean
-	return isLabel(purchaseId) and purchaseId ~= "" and utf8.len(purchaseId) ~= nil
-end
-
-function DataService.isReceiptProcessed(player: Player, purchaseId: string): boolean
-	local profile = getProfile(player)
-	return profile ~= nil and isReceiptId(purchaseId) and profile.processedReceipts[purchaseId] == true
-end
-
-function DataService.markReceiptProcessed(player: Player, purchaseId: string): boolean
-	local profile = getProfile(player)
-	if not profile or not isReceiptId(purchaseId) then
-		return false
-	end
-	profile.processedReceipts[purchaseId] = true
-	return true
-end
-
 function DataService.setTeamSlots(player: Player, teamIndex: number, slots: { string }): boolean
 	local profile = getProfile(player)
 	if not profile then
 		return false
 	end
-	local team = profile.teams[teamIndex]
-	if not team then
+	-- Preset di luar batas absolut ditolak; preset tambahan (gp_presets) dibuat rapat saat pertama disimpan.
+	-- Pemanggil (TeamService) memvalidasi batas per pemain dari gamepass.
+	if not Validate.isIntInRange(teamIndex, 1, Constants.TEAM_PRESETS_BASE + Products.extraPresetsWithPass) then
 		return false
 	end
 	local owned = DataService.getOwnedUidSet(player)
 	if not owned or not TeamRules.validateSlots(slots, owned, Constants.BOARD_UNITS_MAX) then
 		return false
 	end
-	team.slots = table.clone(slots)
+	for index = #profile.teams + 1, teamIndex do
+		profile.teams[index] =
+			{ name = `Tim {index}`, slots = table.create(Constants.BOARD_SLOTS, TeamRules.EMPTY_SLOT) }
+	end
+	profile.teams[teamIndex].slots = table.clone(slots)
 	DataService.Changed:Fire(player, "teams")
 	return true
 end

@@ -8,6 +8,7 @@ local Types = require(Shared.Types)
 local Signal = require(Shared.Util.Signal)
 local TableUtil = require(Shared.Util.TableUtil)
 local AnalyticsService = require(script.Parent.Parent.AnalyticsService)
+local ShopRules = require(script.Parent.ShopRules)
 local StoryRules = require(script.Parent.StoryRules)
 
 export type Outcome = StoryRules.Outcome
@@ -30,6 +31,7 @@ function Commit.run(
 	local original = session.Data
 	local draft = TableUtil.deepCopy(original)
 	StoryRules.reconcile(draft)
+	ShopRules.reconcile(draft)
 	local thread = coroutine.create(mutate)
 	local ok, code, outcome = coroutine.resume(thread, draft)
 	if coroutine.status(thread) ~= "dead" then

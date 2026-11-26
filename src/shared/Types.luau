@@ -1,5 +1,6 @@
 --!strict
 -- Tipe global proyek. Skema data mengikuti docs/ARCHITECTURE.md §6 (versi 1).
+local ShopTypes = require(script.Parent.ShopTypes)
 
 export type Result = {
 	ok: boolean,
@@ -11,7 +12,8 @@ export type Rarity = "Rare" | "Epic" | "Legendary" | "Mythic"
 export type Element = "Api" | "Es" | "Petir" | "Cahaya" | "Bayangan"
 export type Status = "Murid" | "Familiar" | "Profesor"
 export type UnitClass = "Tank" | "Mage" | "Assassin" | "Support" | "Summoner"
-export type UnitSource = "summon" | "story" | "trade" | "event" | "admin"
+-- "shop" (Toko Akademi) dan "battlepass" additive prompt 09; arti nilai lama tetap.
+export type UnitSource = "summon" | "story" | "trade" | "event" | "admin" | "shop" | "battlepass"
 
 export type BaseStats = {
 	hp: number,
@@ -92,12 +94,21 @@ export type StageDef = {
 	firstThreeStarGems: number,
 }
 
+export type ProductKind = ShopTypes.ProductKind
 export type ProductDef = {
-	id: number,
-	kind: "DeveloperProduct" | "GamePass",
-	priceRobux: number?,
+	id: number, -- 0 = belum dipublikasikan (tidak tersedia)
+	kind: ProductKind,
+	name: string?,
+	priceRobux: number?, -- referensi placeholder; client memakai harga aktual GetProductInfoAsync
 	grant: { currency: "Gems" | "TraitShards", amount: number }?,
+	-- Developer Product Premium Battle Pass terikat ke satu musim (receipt terlambat tetap ke musim ini).
+	battlePassSeasonId: string?,
 }
+
+export type AcademyItemKind = ShopTypes.AcademyItemKind
+-- Item Toko Akademi: non-acak, harga Gems tetap, terbuka untuk semua pemain (termasuk restricted).
+export type AcademyItemDef = { id: string, name: string, kind: AcademyItemKind, itemId: string, costGems: number }
+export type SkinDef = { id: string, name: string, unitId: string?, assetId: string }
 
 export type OwnedUnit = {
 	uid: string,
@@ -157,6 +168,19 @@ export type Profile = {
 	createdAt: number,
 	materials: Materials,
 	progress: StoryProgress,
+	purchases: PurchaseRecord,
+	battlePass: { seasons: { [string]: BattlePassSeasonRecord } },
+}
+
+-- Field additive prompt 09 (tanpa migrasi, dilengkapi ShopRules.reconcile).
+-- firstBonus: productKey → bonus pembelian pertama sudah dipakai. academy: itemId → sudah dibeli.
+export type PurchaseRecord = { firstBonus: { [string]: boolean }, academy: { [string]: boolean } }
+-- Klaim memakai kunci string tier ("1".."30") agar aman disimpan ProfileStore.
+export type BattlePassSeasonRecord = {
+	xp: number,
+	premium: boolean,
+	freeClaimed: { [string]: boolean },
+	premiumClaimed: { [string]: boolean },
 }
 
 export type ClientOwnedUnit = {
@@ -326,5 +350,18 @@ export type TraitInfo = {
 
 -- Data sukses RerollTrait(uid).
 export type TraitRerollData = { snapshot: MyData, info: TraitInfo }
+
+-- Toko & Battle Pass: definisi di ShopTypes.luau (dipisah agar file < 400 baris), diekspor ulang di sini.
+export type ShopProductView = ShopTypes.ShopProductView
+export type AcademyItemView = ShopTypes.AcademyItemView
+export type ShopInfo = ShopTypes.ShopInfo
+export type PreparedPurchase = ShopTypes.PreparedPurchase
+export type RewardKind = ShopTypes.RewardKind
+export type Reward = ShopTypes.Reward
+export type BattlePassTrack = ShopTypes.BattlePassTrack
+export type BattlePassTierDef = ShopTypes.BattlePassTierDef
+export type BattlePassSeasonDef = ShopTypes.BattlePassSeasonDef
+export type PassTierView = ShopTypes.PassTierView
+export type PassInfo = ShopTypes.PassInfo
 
 return table.freeze({})

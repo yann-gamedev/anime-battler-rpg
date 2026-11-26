@@ -30,6 +30,9 @@ function Template.create(now: number): Types.Profile
 		-- Field additive v1 (prompt 06); profil lama dilengkapi Reconcile + Progress.reconcile.
 		materials = { XPScrolls = 0 },
 		progress = { tutorialBattleCleared = false, firstThreeStarClaimed = {}, replayDay = 0, replayCount = 0 },
+		-- Field additive v1 (prompt 09); profil lama dilengkapi ShopRules.reconcile.
+		purchases = { firstBonus = {}, academy = {} },
+		battlePass = { seasons = {} },
 	}
 end
 
