@@ -3,6 +3,7 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local Constants = require(Shared.Config.Constants)
 local Economy = require(Shared.Config.Economy)
+local ProgressionRules = require(Shared.ProgressionRules)
 local Units = require(Shared.Config.Units)
 local Stats = require(Shared.BattleSim.Stats)
 local SynergyResolver = require(Shared.BattleSim.SynergyResolver)
@@ -91,22 +92,24 @@ function InventoryDetail.render(
 	)
 
 	local progression = snapshot.progression
+	local belowMax = unit.level < Constants.UNIT_LEVEL_MAX
+	local gold, scrolls = ProgressionRules.levelUpCost(unit.level, 1)
+	local canLevel = belowMax
+		and progression ~= nil
+		and snapshot.currencies.Gold >= gold
+		and progression.xpScrolls >= scrolls
 	local level = Page.button(
 		body,
-		if unit.level < Constants.UNIT_LEVEL_MAX
-			then string.format("Level up · %d Gold + XP Scrolls", Economy.levelCost(unit.level))
+		if belowMax
+			then string.format("Level up · %d Gold + %d XP Scroll%s", gold, scrolls, if scrolls == 1 then "" else "s")
 			else "Maximum level",
 		function()
-			onAction("LevelUpUnit", unit.uid, 1)
+			if canLevel then
+				onAction("LevelUpUnit", unit.uid, 1)
+			end
 		end
 	)
-	Controls.setEnabled(
-		level,
-		progression ~= nil
-			and unit.level < Constants.UNIT_LEVEL_MAX
-			and snapshot.currencies.Gold >= Economy.levelCost(unit.level)
-			and progression.xpScrolls > 0
-	)
+	Controls.setEnabled(level, canLevel)
 	local lock = Page.button(body, if unit.locked then "Unlock unit" else "Lock unit", function()
 		onAction("LockUnit", unit.uid, not unit.locked)
 	end)
