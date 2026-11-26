@@ -47,4 +47,7 @@ local tiers: { [Types.TraitTier]: TierDef } = {
 return TableUtil.deepFreeze({
 	tiers = tiers,
 	pity = { rolls = 100, guaranteedTier = "Legendary", resetTiers = { Legendary = true, Mythic = true } },
+	-- D-OPEN-1: pemain ArePaidRandomItemsRestricted memilih trait tier ini langsung dengan Gold (tanpa RNG).
+	-- Harga PLACEHOLDER sementara; dibaca server (transaksi) dan dikirim ke UI lewat GetTraitInfo.
+	direct = { goldCost = { Common = 200, Uncommon = 600 } },
 })

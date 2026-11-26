@@ -22,10 +22,20 @@ export type Request = {
 	-- Roll murni; menerima counter pity saat ini, mengembalikan hasil + counter berikutnya.
 	roll: (sinceLegendary: number) -> (Draw, number),
 }
+-- Pilihan langsung (D-OPEN-1): trait pasti, harga Gold dari Config/Traits.direct (bukan dari pemanggil).
+export type DirectRequest = {
+	uid: string,
+	traitId: string,
+	-- Dicek terhadap trait unit di draft saat commit (preview terakhir). nil = lolos.
+	precheck: (traitId: string?) -> string?,
+}
+export type DirectResult = { uid: string, traitId: string, previousTraitId: string?, cost: number }
 export type Result = { uid: string, traitId: string, previousTraitId: string?, sinceLegendary: number }
 
 local MAX_EXACT_INTEGER = 2 ^ 53 - 1
 local REROLL_SOURCE = "trait_reroll"
+local DIRECT_SOURCE = "trait_direct"
+local DIRECT_GOLD_COST: { [string]: number } = Traits.direct.goldCost
 local isUid = Validate.isStringMax(Constants.MAX_UID_LENGTH)
 
 local tierById: { [string]: Types.TraitTier } = {}
@@ -106,6 +116,56 @@ function TraitRules.apply(profile: Types.Profile, request: Request): (string?, O
 	return nil,
 		outcome,
 		{ uid = request.uid, traitId = draw.traitId, previousTraitId = previous, sinceLegendary = nextPity }
+end
+
+-- Memasang trait pilihan dengan Gold pada draft. Pity, Shards, dan unit lain tidak disentuh.
+-- Mengembalikan (kode error, nil, nil) atau (nil, outcome, hasil).
+function TraitRules.applyDirect(profile: Types.Profile, request: DirectRequest): (string?, Outcome?, DirectResult?)
+	if
+		type(request) ~= "table"
+		or not isUid(request.uid)
+		or request.uid == ""
+		or type(request.precheck) ~= "function"
+	then
+		return "INVALID_REQUEST", nil, nil
+	end
+	local tier = if type(request.traitId) == "string" then tierById[request.traitId] else nil
+	local cost = if tier then DIRECT_GOLD_COST[tier] else nil
+	if not tier or not Validate.isIntInRange(cost, 1, MAX_EXACT_INTEGER) then
+		return "INVALID_TRAIT", nil, nil
+	end
+	local unit = profile.units[request.uid]
+	if type(unit) ~= "table" or unit.uid ~= request.uid then
+		return "UNIT_NOT_OWNED", nil, nil
+	end
+	if unit.locked ~= false then
+		return "UNIT_LOCKED", nil, nil
+	end
+	local previous = TraitRules.readTrait(unit.trait)
+	local code = request.precheck(previous)
+	if code ~= nil then
+		return code, nil, nil
+	end
+	if previous == request.traitId then
+		return "TRAIT_ALREADY_SET", nil, nil
+	end
+	if not Validate.isIntInRange(profile.currencies.Gold, cost :: number, MAX_EXACT_INTEGER) then
+		return "NOT_ENOUGH_GOLD", nil, nil
+	end
+
+	-- Mulai mutasi: semua cek di atas sudah lolos.
+	local outcome = StoryRules.newOutcome()
+	code = StoryRules.changeCurrency(profile, outcome, "Gold", cost :: number, DIRECT_SOURCE, true)
+	if code ~= nil then
+		return "NOT_ENOUGH_GOLD", nil, nil
+	end
+	local updated = table.clone(unit)
+	updated.trait = request.traitId
+	profile.units[request.uid] = updated
+	outcome.units = true
+	return nil,
+		outcome,
+		{ uid = request.uid, traitId = request.traitId, previousTraitId = previous, cost = cost :: number }
 end
 
 return table.freeze(TraitRules)

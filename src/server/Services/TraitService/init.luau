@@ -3,7 +3,8 @@
 -- RNG, pity, odds, dan pergantian trait hanya di server. Roll murni di Roll.luau, odds UI di Odds.luau
 -- (fungsi bobot yang sama), mutasi profil hanya lewat DataService.traits dalam satu commit tanpa yield.
 -- Kebijakan item acak berbayar dicek lewat ComplianceService sebelum commit (reroll Shards diblok bila
--- restricted). Jalur pengganti untuk pemain restricted menunggu keputusan D-OPEN-1 dan BELUM ada.
+-- restricted). Pemain restricted memilih trait Common/Uncommon langsung dengan Gold (D-OPEN-1,
+-- SelectRestrictedTrait), tanpa RNG dan tanpa menyentuh pity atau Shards.
 local Players = game:GetService("Players")
 
 local RemoteSetup = require(script.Parent.Parent.Net.RemoteSetup)
@@ -29,6 +30,7 @@ function TraitService.init(): ()
 	handlers = created
 	RemoteSetup.bindFunction("GetTraitInfo", created.getTraitInfo)
 	RemoteSetup.bindFunction("RerollTrait", created.rerollTrait)
+	RemoteSetup.bindFunction("SelectRestrictedTrait", created.selectRestrictedTrait)
 end
 
 function TraitService.start(): ()
