@@ -8,6 +8,7 @@ local Types = require(Shared.Types)
 local Constants = require(Shared.Config.Constants)
 local Arena = require(Shared.Config.BattleArena)
 local Units = require(Shared.Config.Units)
+local Settings = require(script.Parent.Parent.Parent.Controllers.SettingsController)
 local Theme = require(script.Parent.Parent.Theme)
 
 local friendly = Color3.fromRGB(128, 234, 191)
@@ -30,7 +31,14 @@ type Unit = {
 	view: ModelView?,
 }
 type Effect = { part: Part, tween: Tween, untilTime: number }
-export type Scene = { folder: Folder, origin: BasePart, units: { Unit }, effects: { Effect }, seconds: number }
+export type Scene = {
+	enemyName: string?,
+	folder: Folder,
+	origin: BasePart,
+	units: { Unit },
+	effects: { Effect },
+	seconds: number,
+}
 local Renderer = {}
 
 local function part(parent: Instance, color: Color3): Part
@@ -169,11 +177,11 @@ local function animate(scene: Scene, block: Part, duration: number, properties: 
 	tween:Play()
 end
 
-function Renderer.new(origin: BasePart): Scene
+function Renderer.new(origin: BasePart, enemyName: string?): Scene
 	local folder = Instance.new("Folder")
 	folder.Name = "BattleReplayVisuals"
 	folder.Parent = Workspace
-	return { folder = folder, origin = origin, units = {}, effects = {}, seconds = 0 }
+	return { enemyName = enemyName, folder = folder, origin = origin, units = {}, effects = {}, seconds = 0 }
 end
 
 function Renderer.clearEffects(scene: Scene): ()
@@ -212,7 +220,7 @@ local function hit(scene: Scene, src: Unit?, dst: Unit, dmg: number, crit: boole
 		return
 	end
 	local source = src and src.view
-	if attack and src and source then
+	if attack and src and source and not Settings.lowGraphics() then
 		local bolt = part(scene.folder, src.color)
 		bolt.Name = "AttackBolt"
 		bolt.Shape = Enum.PartType.Ball
@@ -242,7 +250,7 @@ end
 
 local function death(scene: Scene, unit: Unit, speed: number): ()
 	local view = unit.view
-	if view then
+	if view and not Settings.lowGraphics() then
 		local burst = part(scene.folder, unit.color)
 		burst.Name = "DeathFlash"
 		burst.Material = Enum.Material.Neon
@@ -261,7 +269,10 @@ function Renderer.apply(scene: Scene, event: Types.BattleEvent, speed: number): 
 		local def = Units[event.unitId]
 		scene.units[event.unit] = {
 			id = event.unit,
-			name = if event.owner then "Familiar" else def.name,
+			name = if event.owner
+				then "Familiar"
+				elseif event.side == "B" then scene.enemyName or def.name
+				else def.name,
 			color = Theme.element[def.element],
 			side = event.side,
 			cell = event.cell,
@@ -291,6 +302,9 @@ function Renderer.apply(scene: Scene, event: Types.BattleEvent, speed: number): 
 		dst.hp, dst.shield = event.hp, event.shield
 		health(dst)
 		hit(scene, scene.units[event.src], dst, event.dmg, event.crit, event.kind == "attack", speed)
+		if event.kind == "attack" then
+			Settings.playEffect("battleHit")
+		end
 	elseif event.kind == "heal" or event.kind == "shield" then
 		local unit = scene.units[event.unit]
 		unit.hp, unit.shield = event.hp, event.shield

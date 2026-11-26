@@ -201,7 +201,7 @@ local function tick(session: Session, delta: number): ()
 	end
 end
 
-local function begin(result: Types.BattleResult, onClosed: ((boolean) -> ())?): boolean
+local function begin(result: Types.BattleResult, onClosed: ((boolean) -> ())?, enemyName: string?): boolean
 	if active and active.onClosed then
 		return false
 	end
@@ -226,7 +226,7 @@ local function begin(result: Types.BattleResult, onClosed: ((boolean) -> ())?): 
 
 	local session: Session = {
 		camera = camera,
-		scene = Renderer.new(origin),
+		scene = Renderer.new(origin, enemyName),
 		view = view,
 		result = result,
 		onClosed = onClosed,
@@ -325,7 +325,7 @@ local function begin(result: Types.BattleResult, onClosed: ((boolean) -> ())?): 
 	return true
 end
 
-function BattleViewController.playStory(result: Types.BattleResult, onClosed: (boolean) -> ()): ()
+function BattleViewController.playReplay(result: Types.BattleResult, onClosed: (boolean) -> (), enemyName: string?): ()
 	local delivered = false
 	local function deliver(completed: boolean)
 		if not delivered then
@@ -333,7 +333,7 @@ function BattleViewController.playStory(result: Types.BattleResult, onClosed: (b
 			task.defer(onClosed, completed)
 		end
 	end
-	local ok, started = pcall(begin, result, deliver)
+	local ok, started = pcall(begin, result, deliver, enemyName)
 	if not ok then
 		warn("[BattleReplay] " .. tostring(started))
 		if active and active.onClosed == deliver then
@@ -355,7 +355,7 @@ function BattleViewController.start(): ()
 		end
 		-- One listener persists for this LocalScript. All per-replay resources are closed separately.
 		event.OnClientEvent:Connect(function(result: Types.BattleResult)
-			begin(result)
+			begin(result, nil, nil)
 		end)
 	end)
 end
