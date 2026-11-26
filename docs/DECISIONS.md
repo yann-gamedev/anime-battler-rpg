@@ -31,6 +31,10 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-024 | 2026-11-26 | PolicyService sukses di-cache selama sesi. Kegagalan lookup memblokir Gems dan dapat dicoba kembali setelah 60 detik | Menjaga pembatasan paid random items saat layanan kebijakan tidak merespons |
 | D-025 | 2026-11-26 | Pemain restricted dapat memilih trait Biasa atau Langka langsung dengan Gold (menutup D-OPEN-1) | Jalur deterministik memakai Gold dari gameplay. Harga balancing awal 200 Gold untuk Biasa dan 600 Gold untuk Langka ada di `Config/Traits.luau` |
 
+| D-026 | 2026-11-26 | Grant dari Developer Product, bonus pembelian pertama, dan marker receipt dikomit bersama. Receipt diakui setelah marker muncul di `LastSavedData` | Retry tidak menggandakan hadiah dan Roblox dapat mengirim ulang receipt yang belum tersimpan |
+| D-027 | 2026-11-26 | Toko Akademi memakai harga tetap awal 150 Gems untuk Kael, 300 Gems untuk Selene, dan 250 Gems untuk skin Academy Scholar. Setiap entri dibeli satu kali per akun dan tersedia untuk pemain restricted | Jalur pembelian langsung dengan biaya dan isi yang diketahui sebelum konfirmasi |
+| D-028 | 2026-11-26 | SKU Premium terikat ke ID musim. Musim contoh s1 berdurasi 28 hari dengan 30 tier. Klaim hanya selama musim aktif. Bingkai Akademi dari tier 30 Premium tetap dimiliki setelah musim berakhir | Menjaga kredit dari receipt tertunda pada musim asal dan memberi batas waktu klaim yang bisa ditampilkan di UI |
+
 ## Keputusan terbuka (butuh manusia)
 
 | ID | Pertanyaan | Opsi |
