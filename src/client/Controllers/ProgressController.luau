@@ -15,9 +15,11 @@ local InventoryView = require(UI.InventoryView)
 local TraitRemote = require(UI.TraitRemote)
 local TraitView = require(UI.TraitView)
 local Controls = require(UI.Components.Controls)
-local Modal = require(UI.Components.Modal)
 
-local TEAM_INDEX = 1
+local MonetizationController = require(script.Parent.MonetizationController)
+local StoryFlow = require(script.Parent.StoryFlow)
+local Products = require(ReplicatedStorage.Shared.Config.Products)
+local player = Players.LocalPlayer
 type Route = "hub" | "story" | "inventory"
 
 local ProgressController = {}
@@ -195,75 +197,15 @@ local function inventoryAction(name: string, ...: any): ()
 	render(true)
 end
 
-local function reward(result: Remote.StageResult, lobbyUnlocked: boolean): ()
-	local rows = { string.rep("★", result.stars) .. string.rep("☆", 3 - result.stars) }
-	if result.firstThreeStar then
-		table.insert(rows, "First three-star clear")
-	end
-	local amounts = result.rewards
-	table.insert(
-		rows,
-		string.format(
-			"Gold +%d   Gems +%d\nXP Scrolls +%d   Summon Tickets +%d",
-			amounts.Gold,
-			amounts.Gems,
-			amounts.XPScrolls,
-			amounts.SummonTickets
-		)
-	)
-	local earnedTickets = result.stageId == "tutorial" and amounts.SummonTickets > 0
-	local visitedSummon = false
-	if earnedTickets then
-		table.insert(rows, "Use your free tickets on a summon banner.")
-	elseif lobbyUnlocked then
-		table.insert(rows, "The lobby is now open.")
-	end
-	local modal: Modal.View
-	local restore: () -> ()
-	local function dismiss()
-		restore()
-		modal.screen:Destroy()
-		if lobbyUnlocked then
-			go("hub")
-		else
-			render(true)
-		end
-		if visitedSummon then
-			load()
-		end
-	end
-	local title = (if result.stageId == "tutorial" then "Tutorial" else "Stage " .. result.stageId)
-		.. (if result.stars > 0 then " victory" elseif result.replay.winner == "draw" then " draw" else " defeat")
-	local choices: { Modal.Choice } = if earnedTickets then { { label = "Open Summon", value = "summon" } } else {}
-	modal = Modal.create(
-		parent,
-		title,
-		choices,
-		if earnedTickets then "summon" else nil,
-		function()
-			visitedSummon = true
-			SummonController.open(function()
-				UIController.show(modal.screen, modal.first)
-			end)
-		end,
-		dismiss,
-		{
-			body = rows,
-			closeText = "Continue",
-		}
-	)
-	restore = UIController.overlay(modal.screen, modal.first)
-end
-
-local function startStage(stageId: string): ()
+local function startStage(stageId: string, teamIndex: number, auto: boolean?): ()
 	local previous = data
 	if busy or not previous or not previous.progression then
 		return
 	end
 	storyScroll = pages.story.body.CanvasPosition
 	focusStage = stageId
-	beginRequest("Starting battle with your saved team…")
-	local result, failure = Remote.startStage(stageId, TEAM_INDEX)
+	beginRequest(if auto then "Starting auto-replay…" else "Starting battle with your saved team…")
+	local result, failure = Remote.startStage(stageId, teamIndex, auto)
 	if not result then
 		data = Remote.snapshot("GetMyData")
 		busy = false
@@ -281,12 +223,53 @@ local function startStage(stageId: string): ()
 	previous.currencies.Gems += result.rewards.Gems
 	previous.currencies.SummonTickets += result.rewards.SummonTickets
 
-	BattleViewController.playStory(result.replay, function()
+	BattleViewController.playStory(result.replay, function(completed)
 		busy = false
 		notice = ""
 		render(true)
-		reward(result, lobbyUnlocked)
+		local nextRound: (() -> ())?
+		if auto and completed and result.replay.winner == "A" and player:GetAttribute("PassAutoReplay") == true then
+			nextRound = function()
+				if pages.story.screen.Enabled and player:GetAttribute("PassAutoReplay") == true then
+					startStage(stageId, teamIndex, true)
+				end
+			end
+		end
+		StoryFlow.show(parent, result, lobbyUnlocked, function(visitedSummon)
+			if lobbyUnlocked then
+				go("hub")
+			else
+				render(true)
+			end
+			if visitedSummon then
+				load()
+			end
+		end, nextRound)
 	end)
+end
+
+local function chooseStage(stageId: string): ()
+	if busy or not pages.story.screen.Enabled then
+		return
+	end
+	local teamIndex = TeamBoardController.selectedIndex()
+	local snapshot = data
+	if
+		not snapshot
+		or player:GetAttribute("PassAutoReplay") ~= true
+		or (snapshot.story.cleared[stageId] or 0) < Products.autoReplayRequiredStars
+	then
+		startStage(stageId, teamIndex)
+		return
+	end
+	StoryFlow.chooseMode(parent, stageId, teamIndex, function(auto)
+		startStage(stageId, teamIndex, auto)
+	end)
+end
+
+local function returnToHub(): ()
+	render(true)
+	load()
 end
 
 render = function(preserveScroll: boolean?)
@@ -333,6 +316,12 @@ render = function(preserveScroll: boolean?)
 		end)
 		Page.button(page.body, "Summon", openSummon)
 		Page.button(page.body, "Team Board", openTeam)
+		Page.button(page.body, "Academy Shop", function()
+			MonetizationController.openShop(returnToHub)
+		end)
+		Page.button(page.body, "Battle Pass", function()
+			MonetizationController.openPass(returnToHub)
+		end)
 		if snapshot then
 			Page.label(
 				page.body,
@@ -347,7 +336,15 @@ render = function(preserveScroll: boolean?)
 	elseif not snapshot then
 		Page.label(page.body, "Your profile is unavailable.")
 	elseif route == "story" then
-		first = StoryView.render(page, snapshot, startStage, openTeam, openSummon, focusStage)
+		first = StoryView.render(
+			page,
+			snapshot,
+			chooseStage,
+			openTeam,
+			openSummon,
+			focusStage,
+			TeamBoardController.selectedIndex()
+		)
 	else
 		first = InventoryView.render(page, snapshot, inventory, trait, inventoryAction, function(keepScroll)
 			render(keepScroll)
