@@ -7,6 +7,13 @@ local Lobby = require(Shared.Config.Lobby)
 local Units = require(Shared.Config.Units)
 
 export type Spec = { unitId: string, skinId: string?, stars: number, vipAura: boolean, ownerUserId: number }
+-- Tampilan Body yang sudah diselesaikan (murni, bisa di-test tanpa Instance).
+export type BodyStyle = {
+	color: { r: number, g: number, b: number },
+	material: string, -- nama Enum.Material
+	size: { x: number, y: number, z: number },
+	reflectance: number,
+}
 
 local Showcase = {}
 
@@ -22,6 +29,22 @@ local function inertPart(name: string, size: Vector3): Part
 	part.CastShadow = false
 	part.Material = Enum.Material.SmoothPlastic
 	return part
+end
+
+-- Gaya Body untuk unit + skin: skin yang dikenal memakai placeholder-nya; tanpa/skin tak dikenal = warna elemen.
+function Showcase.bodyStyle(unitId: string, skinId: string?): BodyStyle
+	local def = Units[unitId]
+	local elementColor = if def then Lobby.elementColors[def.element] else nil
+	local skin = if skinId and skinId ~= "" then Lobby.skinBodyStyles[skinId] else nil
+	local base = skin or Lobby.defaultBodyStyle
+	local color = if skin then skin.color else elementColor or { r = 255, g = 255, b = 255 }
+	local size = Lobby.bodySize
+	return {
+		color = { r = color.r, g = color.g, b = color.b },
+		material = base.material,
+		size = { x = size.x * base.sizeScale.x, y = size.y * base.sizeScale.y, z = size.z * base.sizeScale.z },
+		reflectance = base.reflectance,
+	}
 end
 
 -- Kunci perbandingan agar model hanya dibangun ulang saat isinya berubah.
@@ -64,10 +87,11 @@ function Showcase.apply(character: Model?, spec: Spec?, isCurrent: () -> boolean
 	root.Transparency = 1
 	root.CFrame = hrp.CFrame * offset
 	root.Parent = model
-	local size = Lobby.bodySize
-	local body = inertPart(Lobby.bodyName, Vector3.new(size.x, size.y, size.z))
-	local color = Lobby.elementColors[def.element]
-	body.Color = if color then Color3.fromRGB(color.r, color.g, color.b) else Color3.new(1, 1, 1)
+	local style = Showcase.bodyStyle(spec.unitId, spec.skinId)
+	local body = inertPart(Lobby.bodyName, Vector3.new(style.size.x, style.size.y, style.size.z))
+	body.Color = Color3.fromRGB(style.color.r, style.color.g, style.color.b)
+	body.Material = (Enum.Material :: any)[style.material]
+	body.Reflectance = style.reflectance
 	body.CFrame = root.CFrame * lift
 	body.Parent = model
 

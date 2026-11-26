@@ -132,6 +132,30 @@ return function(ctx: TestRunner.TestContext)
 		expect(Showcase.key(base) ~= Showcase.key(vip)).toBe(true)
 	end)
 
+	test("each configured skin has a distinct visible Body style", function()
+		local Skins = require(Shared.Config.Skins)
+		local function signature(style: any): string
+			return `{style.color.r},{style.color.g},{style.color.b}|{style.material}|{style.size.x},{style.size.y},{style.size.z}|{style.reflectance}`
+		end
+		local default = Showcase.bodyStyle("selene", nil)
+		expect(signature(Showcase.bodyStyle("selene", ""))).toBe(signature(default))
+		expect(signature(Showcase.bodyStyle("selene", "skin_unknown"))).toBe(signature(default))
+		local seen = { [signature(default)] = "default" }
+		local count = 0
+		for skinId in Skins do
+			local sig = signature(Showcase.bodyStyle("selene", skinId))
+			expect(seen[sig]).toBe(nil)
+			seen[sig] = skinId
+			count += 1
+		end
+		expect(count >= 2).toBe(true)
+		local scholar = Showcase.bodyStyle("kael", "skin_academy_scholar")
+		local starfall = Showcase.bodyStyle("selene", "skin_s1_starfall")
+		expect(scholar.material ~= default.material).toBe(true)
+		expect(starfall.material ~= scholar.material).toBe(true)
+		expect(starfall.size.x ~= default.size.x).toBe(true)
+	end)
+
 	test("GetMyData exposes only owned configured skins", function()
 		local profile: any = Template.create(0)
 		profile.skinsOwned = { skin_academy_scholar = true, skin_fake = true, skin_s1_starfall = false }
