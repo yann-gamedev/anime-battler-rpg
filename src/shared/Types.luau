@@ -32,6 +32,68 @@ export type UnitDef = {
 	ultimate: string,
 }
 
+export type TraitTier = "Common" | "Uncommon" | "Epic" | "Legendary" | "Mythic"
+
+export type TraitDef = {
+	id: string,
+	name: string,
+	hpBonus: number?,
+	atkBonus: number?,
+	defBonus: number?,
+	spdBonus: number?,
+	allStatsBonus: number?,
+	manaGainBonus: number?,
+	critChanceBonus: number?,
+	startingMana: number?,
+	lifesteal: number?,
+	repeatUltimateChance: number?,
+	freeFirstUltimateAtSeconds: number?,
+}
+
+export type SynergyDef = {
+	count: number,
+	burnHpPerSecond: number?,
+	burnSeconds: number?,
+	slow: number?,
+	freezeChance: number?,
+	freezeSeconds: number?,
+	speedBonus: number?,
+	healHpPerSecond: number?,
+	healTarget: ("matchingElement" | "allAllies")?,
+	critChanceBonus: number?,
+	critDamageMultiplier: number?,
+	atkAndDefBonus: number?,
+	stackIntervalSeconds: number?,
+	firstReviveHp: number?,
+	manaGainBonus: number?,
+}
+
+export type BannerDef = {
+	id: string,
+	kind: "Standard" | "Limited",
+	oddsPercent: { [Rarity]: number },
+	unitIds: { string },
+	featuredUnitId: string?,
+	featuredSharePercent: number?,
+	guaranteeFeaturedAfterMiss: boolean?,
+	rotationDays: number?,
+}
+
+export type StageDef = {
+	id: string,
+	chapter: number,
+	index: number,
+	enemies: { { unitId: string, slot: number, level: number, stars: number } },
+	firstThreeStarGems: number,
+}
+
+export type ProductDef = {
+	id: number,
+	kind: "DeveloperProduct" | "GamePass",
+	priceRobux: number?,
+	grant: { currency: "Gems" | "TraitShards", amount: number }?,
+}
+
 export type OwnedUnit = {
 	uid: string,
 	unitId: string,
@@ -95,4 +157,4 @@ export type TeamBoardData = {
 	maxUnits: number,
 }
 
-return {}
+return table.freeze({})

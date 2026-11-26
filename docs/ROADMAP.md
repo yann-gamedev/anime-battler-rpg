@@ -9,7 +9,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 - [ ] Pindahkan `build_main_menu.luau` ke `studio/ui/`
 
 ## M1 — Fondasi data
-- [ ] `Types.luau` + semua `Config/` awal dari `docs/UNITS.md` & `docs/ECONOMY.md` → `prompts/01-types-config.md`
+- [x] `Types.luau` + semua `Config/` awal dari `docs/UNITS.md` & `docs/ECONOMY.md` → `prompts/01-types-config.md`
 - [ ] `DataService` dengan ProfileStore, template, migrasi, API mutasi → `prompts/02-data-service.md`
 
 ## M2 — Battle

@@ -33,6 +33,14 @@ local Constants = {
 	UNIT_LEVEL_MIN = 1,
 	UNIT_LEVEL_MAX = 60,
 
+	-- docs/UNITS.md §1 dan docs/GDD.md §6.
+	MANA_MAX = 100,
+	MANA_PER_ATTACK = 10,
+	MANA_PER_HIT_TAKEN = 5,
+	BASE_CRIT_CHANCE = 0.05,
+	BASE_CRIT_DAMAGE_MULTIPLIER = 1.5,
+	BATTLE_MAX_SECONDS = 90,
+
 	-- Rate limit per pemain per remote. Setiap RemoteFunction WAJIB punya entri di sini.
 	RATE_LIMITS = {
 		GetTeamBoard = { max = 10, windowSec = 10 },

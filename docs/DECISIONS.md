@@ -15,6 +15,8 @@ Format: `D-NNN | tanggal | keputusan | alasan`. Jangan hapus entri lama; jika be
 | D-007 | 2026-11-26 | Kode dikelola dengan Rojo + git; Studio build script hanya untuk membangun instance | Kode bisa di-review, di-diff, dan dikerjakan agent |
 | D-008 | 2026-11-26 | Data pemain memakai ProfileStore | Session locking mencegah dupe & kehilangan data |
 | D-009 | 2026-11-26 | Slot papan & tiket serangan tidak dijual | Pemain gratis tetap bermakna di mode kompetitif |
+| D-010 | 2026-11-26 | Banner Limited contoh menampilkan Seraphine sebagai featured, dan Seraphine tetap ada di pool Standar | Prompt 01 meminta contoh featured, sedangkan ECONOMY §2 mencantumkan Seraphine dalam contoh peluang Standar |
+| D-011 | 2026-11-26 | Stage awal memakai tiga musuh placeholder per bab dengan level 1–30 mengikuti urutan stage | Prompt 01 mengizinkan musuh sementara. Gold dan XP Scroll per stage menunggu angka reward di task story |
 
 ## Keputusan terbuka (butuh manusia)
 

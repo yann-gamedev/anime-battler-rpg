@@ -42,7 +42,9 @@ battler-rpg/
     │   │   ├── Economy.luau
     │   │   ├── Stages.luau
     │   │   ├── Products.luau     # ID developer product & gamepass
-    │   │   ├── Territories.luau
+│   │   ├── Territories.luau
+│   │   ├── Ultimates.luau    # parameter angka untuk ultimate
+│   │   ├── Validate.luau     # validasi config saat server boot
     │   │   └── Assets.luau       # asset ID model/anim/sound
     │   ├── BattleSim/        # simulasi battle deterministik, tanpa Instance
     │   │   ├── init.luau
@@ -235,7 +237,7 @@ local Units: { [string]: Types.UnitDef } = {
 		class = "Mage",
 		element = "Api",
 		status = "Murid",
-		base = { hp = 520, atk = 64, def = 18, spd = 1.0, range = 3 },
+		base = { hp = 520, atk = 64, def = 18, spd = 0.9, range = 3 },
 		ultimate = "kael_flare_burst",
 	},
 }

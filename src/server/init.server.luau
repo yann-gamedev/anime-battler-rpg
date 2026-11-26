@@ -1,12 +1,13 @@
 --!strict
 -- Bootstrap server (docs/ARCHITECTURE.md §3):
--- 1) buat remote dari registry, 2) require semua service, 3) init() semua, 4) start() semua,
--- 5) jalankan Dev/TestRunner hanya jika ModuleScript-nya ada (dimiliki branch test runner).
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ConfigValidate = require(ReplicatedStorage.Shared.Config.Validate)
 local Net = script:WaitForChild("Net")
 local RemoteSetup = require(Net:WaitForChild("RemoteSetup")) :: any
 
 type Service = { init: () -> (), start: () -> () }
 
+ConfigValidate.run()
 RemoteSetup.init()
 
 local services: { { name: string, module: Service } } = {}
