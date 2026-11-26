@@ -28,7 +28,12 @@ export type ShopInfo = {
 	academy: { AcademyItem },
 }
 export type Track = "Free" | "Premium"
-export type Reward = { kind: "Currency" | "UnitChoice" | "Skin", id: string?, amount: number?, options: { string }? }
+export type Reward = {
+	kind: "Currency" | "UnitChoice" | "Skin" | "ProfileFrame",
+	id: string?,
+	amount: number?,
+	options: { string }?,
+}
 export type Tier = {
 	tier: number,
 	free: { Reward },
@@ -45,6 +50,7 @@ export type PassInfo = {
 	xpPerTier: number,
 	unlockedTier: number,
 	premium: boolean,
+	profileFrameId: string?,
 	tiers: { Tier },
 }
 

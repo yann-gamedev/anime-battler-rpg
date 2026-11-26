@@ -6,6 +6,8 @@ local Remote = require(script.Parent.MonetizationRemote)
 local Theme = require(script.Parent.Theme)
 
 local View = {}
+local ACADEMY_FRAME_ID = "s1_academy_frame"
+local ACADEMY_FRAME_NAME = "Academy Profile Frame"
 
 function View.utc(timestamp: number): string
 	return os.date("!%d %b %Y, %H:%M UTC", math.floor(timestamp)) :: string
@@ -16,11 +18,33 @@ function View.unitName(id: string): string
 	return if unit then unit.name else id
 end
 
+function View.profileFrame(page: Page.Page, frameId: string?, displayName: string): ()
+	if frameId ~= ACADEMY_FRAME_ID then
+		return
+	end
+	local frame = Controls.panel(UDim2.new(1, 0, 0, Theme.touch), page.body)
+	frame.Name = "AcademyProfileFrame"
+	frame.BackgroundColor3 = Theme.button
+	local border = Instance.new("UIStroke")
+	border.Color = Theme.rarity.Epic
+	border.Thickness = 2
+	border.Parent = frame
+
+	local name = Controls.label(displayName, UDim2.new(1, -2 * Theme.padding, 1, 0), frame)
+	name.Position = UDim2.fromOffset(Theme.padding, 0)
+	name.Font = Theme.bold
+	name.TextXAlignment = Enum.TextXAlignment.Center
+	name.TextWrapped = false
+	name.TextTruncate = Enum.TextTruncate.AtEnd
+end
+
 local function describe(reward: Remote.Reward): string
 	if reward.kind == "Currency" then
 		return string.format("%d %s", reward.amount or 0, reward.id or "")
 	elseif reward.kind == "Skin" then
 		return "Skin entitlement: " .. (reward.id or "Season skin")
+	elseif reward.kind == "ProfileFrame" then
+		return if reward.id == ACADEMY_FRAME_ID then ACADEMY_FRAME_NAME else "Profile Frame"
 	end
 	local names = {}
 	for _, id in reward.options or {} do
