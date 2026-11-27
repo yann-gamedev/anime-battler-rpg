@@ -28,6 +28,9 @@ local SessionTypes = require(script.SessionTypes)
 local Summons = require(script.Summons)
 local Template = require(script.Template)
 local Traits = require(script.Traits)
+local Admin = require(script.Admin)
+local Commit = require(script.Commit)
+local TradeSetup = require(script.TradeSetup)
 
 type Session = SessionTypes.Session
 
@@ -57,12 +60,14 @@ DataService.summons = Summons.create(getActiveSession, DataService.Changed) -- m
 DataService.traits = Traits.create(getActiveSession, DataService.Changed) -- mutasi reroll trait atomik
 DataService.battlePass = BattlePass.create(getActiveSession, DataService.Changed) -- XP & klaim battle pass
 DataService.meta = Meta.create(getActiveSession, DataService.Changed) -- quest, raid, pajangan lobby
--- Receipt + Toko Akademi. Hanya DataStore asli (bukan mock ProfileStore) yang dianggap bukti simpan.
-DataService.purchases = Purchases.create(getActiveSession :: any, DataService.Changed, {
-	isDurable = function(): boolean
-		return ProfileStore.DataStoreState == "Access" and not ProfileStore.IsClosing
-	end,
-})
+-- Hanya DataStore asli (bukan mock ProfileStore) yang dianggap bukti simpan (receipt & jurnal trade).
+local function isDurable(): boolean
+	return ProfileStore.DataStoreState == "Access" and not ProfileStore.IsClosing
+end
+DataService.purchases = Purchases.create(getActiveSession :: any, DataService.Changed, { isDurable = isDurable })
+local trade = TradeSetup.create(getActiveSession, DataService.Changed, isDurable)
+DataService.trades = trade.api -- trade (prompt 11): validasi, kunci item, commit berjurnal (TradeJournal)
+Commit.setGuard(trade.guard)
 DataService.isReceiptProcessed = DataService.purchases.isReceiptProcessed
 DataService.markReceiptProcessed = DataService.purchases.markReceiptProcessed
 
@@ -180,6 +185,15 @@ local function onPlayerAdded(player: Player): ()
 		return
 	end
 
+	-- Pemulihan jurnal trade sebelum profil dipakai gameplay (boleh yield). Gagal = tolak muat (fail-closed).
+	local recovered, toFinish = trade.recover(player, activeSession)
+	if not recovered or closing or ProfileStore.IsClosing or player.Parent ~= Players then
+		activeSession:EndSession()
+		if player.Parent == Players and not closing then
+			player:Kick(LOAD_FAILED)
+		end
+		return
+	end
 	session.OnSessionEnd:Connect(function()
 		if sessions[player] == activeSession then
 			sessions[player] = nil
@@ -189,6 +203,7 @@ local function onPlayerAdded(player: Player): ()
 		end
 	end)
 	sessions[player] = session
+	trade.afterLoad(player, session, toFinish)
 	if isNewProfile then
 		AnalyticsService.logNewProfile(player) -- langkah 1 funnel onboarding, setelah sesi aktif
 	end
@@ -197,6 +212,7 @@ end
 local function onPlayerRemoving(player: Player): ()
 	local session = sessions[player]
 	sessions[player] = nil
+	trade.remove(player)
 	if session then
 		session:EndSession()
 	end
@@ -251,7 +267,7 @@ local function changeCurrency(
 		return false
 	end
 	local balance = ProfileRules.currencyBalance(profile.currencies[kind], amount, spend)
-	if balance == nil then
+	if balance == nil or (spend and kind == "Gold" and balance < trade.api.goldReserve(player)) then
 		return false
 	end
 	profile.currencies[kind] = balance
@@ -286,7 +302,14 @@ function DataService.removeUnit(player: Player, uid: string, reason: string): Ty
 	end
 	local profile = getProfile(player)
 	local unit = profile and profile.units[uid]
-	if not profile or not unit or unit.locked or not isLabel(reason) or reason == "" then
+	if
+		not profile
+		or not unit
+		or unit.locked
+		or not isLabel(reason)
+		or reason == ""
+		or trade.api.isUidLocked(player, uid)
+	then
 		return nil
 	end
 	profile.units[uid] = nil
@@ -313,7 +336,7 @@ function DataService.updateUnit(player: Player, uid: string, mutator: (Types.Own
 	end
 	local profile = getProfile(player)
 	local unit = profile and profile.units[uid]
-	if not profile or not unit or type(mutator) ~= "function" then
+	if not profile or not unit or type(mutator) ~= "function" or trade.api.isUidLocked(player, uid) then
 		return false
 	end
 	local candidate = table.clone(unit)
@@ -370,28 +393,6 @@ function DataService.setTeamSlots(player: Player, teamIndex: number, slots: { st
 	return true
 end
 
-local function isStudioAdmin(player: Player): boolean
-	return IS_STUDIO and table.find(Constants.ADMIN_USER_IDS, player.UserId) ~= nil
-end
-
--- Studio server Command Bar only. Both commands operate on the allowlisted player's own session.
-function DataService.adminResetProfile(player: Player): boolean
-	local session = if isStudioAdmin(player) then getActiveSession(player) else nil
-	if not session then
-		return false
-	end
-	local profile = Template.create(os.time())
-	grantStarterUnits(profile)
-	session.Data = profile
-	session:Save()
-	DataService.Changed:Fire(player, "units")
-	DataService.Changed:Fire(player, "currencies")
-	DataService.Changed:Fire(player, "teams")
-	return true
-end
-
-function DataService.adminAddGems(player: Player, amount: number): boolean
-	return isStudioAdmin(player) and DataService.addCurrency(player, "Gems", amount, "studio_admin")
-end
+Admin.attach(DataService, getActiveSession, grantStarterUnits, trade.api.isLocked)
 
 return DataService

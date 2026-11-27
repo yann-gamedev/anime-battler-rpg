@@ -5,6 +5,7 @@ local Lobby = require(script.Parent.Lobby)
 local Quests = require(script.Parent.Quests)
 local Raids = require(script.Parent.Raids)
 local Skins = require(script.Parent.Skins)
+local Trade = require(script.Parent.Trade)
 local Units = require(script.Parent.Units)
 
 local MetaValidate = {}
@@ -69,6 +70,14 @@ function MetaValidate.run(): ()
 		assert(style.reflectance >= 0 and style.reflectance <= 1, `{skinId}: bad reflectance`)
 	end
 	assert(materials[Lobby.defaultBodyStyle.material], "Lobby.defaultBodyStyle: unsupported material")
+	-- Trade (prompt 11).
+	for _, key in { "minAccountLevel", "dailyMaxTrades", "maxItemsPerSide", "taxGold", "countdownSeconds" } do
+		assert(isPositiveInt((Trade :: any)[key]), `Trade.{key} must be a positive integer`)
+	end
+	assert(Trade.levelRefundRate >= 0 and Trade.levelRefundRate <= 1, "Trade.levelRefundRate must be 0..1")
+	assert(Trade.requestSeconds <= Trade.sessionMaxSeconds, "Trade.requestSeconds exceeds sessionMaxSeconds")
+	assert(Trade.tradableStars == Constants.UNIT_STARS_MIN, "Trade.tradableStars must be 1 (D-004)")
+	assert(Trade.log.maxPendingPerUser < Trade.log.recentTradesKept, "Trade.log: markers must outlive pending")
 	for element, color in Lobby.elementColors do
 		assert(color.r and color.g and color.b, `Lobby.elementColors.{element}: bad color`)
 	end

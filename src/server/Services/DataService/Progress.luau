@@ -11,6 +11,7 @@ local MetaRules = require(script.Parent.MetaRules)
 local Replication = require(script.Parent.Replication)
 local ShopRules = require(script.Parent.ShopRules)
 local StoryRules = require(script.Parent.StoryRules)
+local TradeRules = require(script.Parent.TradeRules)
 
 type Outcome = StoryRules.Outcome
 type Mutation = (draft: Types.Profile) -> (string?, Outcome?)
@@ -30,6 +31,7 @@ function Progress.reconcile(profile: Types.Profile): ()
 	StoryRules.reconcile(profile)
 	ShopRules.reconcile(profile)
 	MetaRules.reconcile(profile)
+	TradeRules.reconcile(profile)
 end
 
 local function commit(player: Player, mutate: Mutation): (string?, Outcome?)

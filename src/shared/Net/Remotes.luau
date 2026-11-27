@@ -5,7 +5,8 @@
 
 local Remotes = {
 	FOLDER_NAME = "Remotes",
-	Events = { "InventoryChanged", "CurrencyChanged", "BattleResult" }, -- S→C
+	-- S→C. TradeUpdated: TradeView (shared/TradeTypes) HANYA ke kedua peserta sesi.
+	Events = { "InventoryChanged", "CurrencyChanged", "BattleResult", "TradeUpdated" },
 	Functions = { -- RemoteFunction, hanya C→S
 		"GetMyData",
 		"StartTestBattle",
@@ -34,6 +35,13 @@ local Remotes = {
 		"ClaimQuest", -- (questId: string, periodKey: string) → Result<QuestInfo>
 		"GetRaidInfo", -- () → Result<RaidInfo>
 		"StartRaid", -- (teamIndex: number) → Result<RaidResultData>; 1 percobaan gratis per hari UTC
+		-- Trade (prompt 11). Semua → Result<TradeView> (shared/TradeTypes).
+		"RequestTrade", -- (targetUserId: number)
+		"RespondTrade", -- (sessionId: string, accept: boolean)
+		"SetTradeItems", -- (sessionId: string, unitUids: { string }, skinIds: { string })
+		"SetReady", -- (sessionId: string, ready: boolean, expectedRevision: number)
+		"ConfirmTrade", -- (sessionId: string, expectedRevision: number); hanya setelah countdown selesai
+		"CancelTrade", -- (sessionId: string)
 	},
 }
 
