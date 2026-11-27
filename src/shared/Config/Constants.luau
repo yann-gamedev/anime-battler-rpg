@@ -75,6 +75,12 @@ local Constants = {
 		ClaimQuest = { max = 5, windowSec = 5 },
 		GetRaidInfo = { max = 6, windowSec = 10 },
 		StartRaid = { max = 1, windowSec = 3 },
+		RequestTrade = { max = 3, windowSec = 10 },
+		RespondTrade = { max = 5, windowSec = 10 },
+		SetTradeItems = { max = 10, windowSec = 5 },
+		SetReady = { max = 10, windowSec = 5 },
+		ConfirmTrade = { max = 10, windowSec = 5 },
+		CancelTrade = { max = 5, windowSec = 5 },
 	} :: { [string]: RateLimitRule },
 
 	-- Batas panjang ID banner dari client (validasi bentuk sebelum lookup config).

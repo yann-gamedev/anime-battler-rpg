@@ -223,4 +223,7 @@ function Purchases.create(
 	}
 end
 
+-- Dipakai ulang oleh jurnal trade (DataService/TradeSetup) untuk menunggu bukti simpan.
+Purchases.defaultWaitForSave = defaultWaitForSave
+
 return table.freeze(Purchases)

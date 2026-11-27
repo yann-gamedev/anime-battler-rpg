@@ -17,7 +17,15 @@ export type Mutation = (draft: Types.Profile) -> (string?, Outcome?)
 export type SessionLike = { Data: Types.Profile }
 export type SessionGetter = (Player) -> SessionLike?
 
+export type Guard = (player: Player, original: Types.Profile, draft: Types.Profile) -> string?
+
 local Commit = {}
+local guard: Guard? = nil
+
+-- Dipasang sekali oleh DataService: menolak draft yang mengubah item/Gold yang sedang dikunci trade.
+function Commit.setGuard(fn: Guard): ()
+	guard = fn
+end
 
 function Commit.run(
 	getSession: SessionGetter,
@@ -52,6 +60,10 @@ function Commit.run(
 	end
 	if not outcome or getSession(player) ~= session or session.Data ~= original then
 		return "DATA_NOT_READY", nil
+	end
+	local blocked = if guard then guard(player, original, draft) else nil
+	if blocked then
+		return blocked, nil
 	end
 	session.Data = draft
 	AnalyticsService.logCommit(player, baseline, outcome.deltas, draft)

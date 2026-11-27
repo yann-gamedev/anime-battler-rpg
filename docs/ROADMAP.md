@@ -41,7 +41,9 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 
 ## M6 — Trade
 - [ ] `TradeService`, Trading Plaza, UI trade → `prompts/11-trade.md`
+  - Backend dan UI Trading Plaza sudah terintegrasi. Build, lint, state machine, pemulihan jurnal tiruan, dan kontrak snapshot UI lulus. Trade live dimatikan (D-034) sampai uji dua client dan durabilitas DataStore di place uji Studio selesai.
 - [ ] Review keamanan trade + uji dupe manual
+  - Review sumber dan uji idempotensi tiruan lulus. Uji persistensi dan pemulihan di Roblox masih tertunda. [Laporan review](M6-TRADE-REVIEW.md)
 
 ## M7 — Asrama & Perang Wilayah
 - [ ] `GuildService`, `TerritoryService`, peta wilayah, siklus mingguan → `prompts/12-guild-territory.md`
