@@ -57,7 +57,8 @@ local function world()
 				w.locks[player] = nil
 				w.unlocks += 1
 			end,
-			commit = function(a: any, b: any)
+			commit = function(a: any, b: any, onResolved: any)
+				w.onResolved = onResolved
 				w.commits += 1
 				w.lastParties = { a, b }
 				w.locks[a.player] = nil
@@ -118,15 +119,24 @@ local function world()
 	-- Sesi terbuka dengan satu unit di setiap sisi.
 	function w.openSession(): string
 		local id = h.RequestTrade(w.a, 2).data.sessionId
-		assert(h.RespondTrade(w.b, id, true).ok)
-		assert(h.SetTradeItems(w.a, id, { "ua" }, {}).ok)
-		assert(h.SetTradeItems(w.b, id, { "ub" }, {}).ok)
+		assert(h.RespondTrade(w.b, id, true).ok, "TradeFlow setup must hold: h.RespondTrade(w.b, id, true).ok")
+		assert(
+			h.SetTradeItems(w.a, id, { "ua" }, {}).ok,
+			"TradeFlow setup must hold: h.SetTradeItems(w.a, id, { 'ua' }, {}).ok"
+		)
+		assert(
+			h.SetTradeItems(w.b, id, { "ub" }, {}).ok,
+			"TradeFlow setup must hold: h.SetTradeItems(w.b, id, { 'ub' }, {}).ok"
+		)
 		return id
 	end
 	function w.countdown(): (string, number)
 		local id = w.openSession()
 		local revision = w.last(w.a).revision
-		assert(h.SetReady(w.a, id, true, revision).ok)
+		assert(
+			h.SetReady(w.a, id, true, revision).ok,
+			"TradeFlow setup must hold: h.SetReady(w.a, id, true, revision).ok"
+		)
 		local result = h.SetReady(w.b, id, true, revision)
 		assert(result.ok, result.code)
 		return id, result.data.revision
@@ -160,7 +170,7 @@ return function(t: TestRunner.TestContext): ()
 
 	t.test("busy players cannot start a second session", function()
 		local w = world()
-		assert(w.h.RequestTrade(w.a, 2).ok)
+		assert(w.h.RequestTrade(w.a, 2).ok, "TradeFlow setup must hold: w.h.RequestTrade(w.a, 2).ok")
 		t.expect(w.h.RequestTrade(w.c, 1).code).toBe("TARGET_BUSY")
 		t.expect(w.h.RequestTrade(w.b, 3).code).toBe("TRADE_BUSY")
 	end)
@@ -195,7 +205,10 @@ return function(t: TestRunner.TestContext): ()
 		local w = world()
 		local id = w.openSession()
 		local revision = w.last(w.a).revision
-		assert(w.h.SetReady(w.a, id, true, revision).ok)
+		assert(
+			w.h.SetReady(w.a, id, true, revision).ok,
+			"TradeFlow setup must hold: w.h.SetReady(w.a, id, true, revision).ok"
+		)
 		w.pairCode = "NOT_ENOUGH_GOLD"
 		t.expect(w.h.SetReady(w.b, id, true, revision).code).toBe("NOT_ENOUGH_GOLD")
 		t.expect(w.locks[w.a]).toBe(nil)
@@ -273,7 +286,7 @@ return function(t: TestRunner.TestContext): ()
 
 	t.test("unanswered request expires after requestSeconds", function()
 		local w = world()
-		assert(w.h.RequestTrade(w.a, 2).ok)
+		assert(w.h.RequestTrade(w.a, 2).ok, "TradeFlow setup must hold: w.h.RequestTrade(w.a, 2).ok")
 		w.now += Trade.requestSeconds
 		w.coordinator.tick()
 		t.expect(w.last(w.b).status).toBe("Cancelled")
@@ -293,13 +306,37 @@ return function(t: TestRunner.TestContext): ()
 		t.expect(w.last(w.b).reason).toBe("UNIT_NOT_OWNED")
 	end)
 
+	t.test("ambiguous commit stays Confirmed until the journal resolves", function()
+		local w = world()
+		local id, revision = w.countdown()
+		w.now += Trade.countdownSeconds
+		w.commitCode = "TRADE_PENDING_RECOVERY"
+		w.h.ConfirmTrade(w.a, id, revision)
+		w.h.ConfirmTrade(w.b, id, revision)
+		w.drain()
+		t.expect(w.last(w.a).status).toBe("Confirmed")
+		t.expect(w.h.CancelTrade(w.a, id).code).toBe("TRADE_COMMITTING")
+		w.coordinator.tick()
+		t.expect(w.last(w.a).status).toBe("Confirmed")
+		t.expect(w.h.RequestTrade(w.a, 3).code).toBe("TRADE_BUSY")
+		w.onResolved(nil)
+		t.expect(w.last(w.a).status).toBe("Done")
+		t.expect(w.last(w.b).status).toBe("Done")
+		w.onResolved("LATE")
+		t.expect(w.last(w.a).status).toBe("Done")
+		t.expect(w.coordinator.sessionOf(1)).toBe(nil)
+	end)
+
 	t.test("one empty side is allowed and both-empty is rejected", function()
 		local w = world()
 		local id = w.h.RequestTrade(w.a, 2).data.sessionId
 		w.h.RespondTrade(w.b, id, true)
 		local revision = w.last(w.a).revision
 		t.expect(w.h.SetReady(w.a, id, true, revision).code).toBe("BOTH_SIDES_EMPTY")
-		assert(w.h.SetTradeItems(w.a, id, { "ua" }, {}).ok)
+		assert(
+			w.h.SetTradeItems(w.a, id, { "ua" }, {}).ok,
+			"TradeFlow setup must hold: w.h.SetTradeItems(w.a, id, { 'ua' }, {}).ok"
+		)
 		revision = w.last(w.a).revision
 		t.expect(w.h.SetReady(w.b, id, true, revision).ok).toBe(true)
 		t.expect(#w.last(w.b).mine.units).toBe(0)

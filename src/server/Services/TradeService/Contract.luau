@@ -18,7 +18,8 @@ export type TradeApi = {
 		lock: { uids: { string }, skins: { string }, gold: number, incomingUnits: number, incomingSkins: { string } }
 	) -> (),
 	unlock: (player: Player) -> (),
-	commit: (a: Party, b: Party) -> (string?, any?),
+	-- "TRADE_PENDING_RECOVERY": keputusan belum diketahui; onResolved dipanggil sekali saat selesai.
+	commit: (a: Party, b: Party, onResolved: ((code: string?) -> ())?) -> (string?, any?),
 	describeUnits: (player: Player, uids: { string }) -> { TradeSession.UnitBrief },
 }
 export type Deps = {

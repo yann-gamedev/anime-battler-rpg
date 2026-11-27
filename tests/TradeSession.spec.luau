@@ -14,17 +14,26 @@ end
 
 local function open(): TradeSession.Session
 	local session = TradeSession.new("s1", A, B, 100)
-	assert(TradeSession.respond(session, B, true, 101) == nil)
+	assert(
+		TradeSession.respond(session, B, true, 101) == nil,
+		"TradeSession setup must hold: TradeSession.respond(session, B, true, 101) == nil"
+	)
 	return session
 end
 
 -- Sesi di Countdown dengan unit di sisi A, kembali dengan revision countdown.
 local function countdown(): (TradeSession.Session, number)
 	local session = open()
-	assert(TradeSession.setItems(session, A, { unit("u1") }, {}) == nil)
-	assert(TradeSession.setReady(session, A, true, session.revision, 102) == nil)
+	assert(
+		TradeSession.setItems(session, A, { unit("u1") }, {}) == nil,
+		"TradeSession setup must hold: TradeSession.setItems(session, A, { unit('u1') }, {}) == nil"
+	)
+	assert(
+		TradeSession.setReady(session, A, true, session.revision, 102) == nil,
+		"TradeSession setup must hold: TradeSession.setReady(session, A, true, session.revision, 102) == nil"
+	)
 	local code, armed = TradeSession.setReady(session, B, true, session.revision, 103)
-	assert(code == nil and armed)
+	assert(code == nil and armed, "TradeSession setup must hold: code == nil and armed")
 	return session, session.revision
 end
 
@@ -52,8 +61,14 @@ return function(t: TestRunner.TestContext): ()
 
 	t.test("item change bumps revision and updateId and resets both readiness", function()
 		local session = open()
-		assert(TradeSession.setItems(session, B, { unit("b1") }, {}) == nil)
-		assert(TradeSession.setReady(session, B, true, session.revision, 102) == nil)
+		assert(
+			TradeSession.setItems(session, B, { unit("b1") }, {}) == nil,
+			"TradeSession setup must hold: TradeSession.setItems(session, B, { unit('b1') }, {}) == nil"
+		)
+		assert(
+			TradeSession.setReady(session, B, true, session.revision, 102) == nil,
+			"TradeSession setup must hold: TradeSession.setReady(session, B, true, session.revision, 102) == nil"
+		)
 		local revision, updateId = session.revision, session.updateId
 		t.expect(TradeSession.setItems(session, A, { unit("a1") }, { "skin_x" })).toBe(nil)
 		t.expect(session.revision).toBe(revision + 1)
@@ -64,7 +79,10 @@ return function(t: TestRunner.TestContext): ()
 
 	t.test("identical item list is a no-op without new revision", function()
 		local session = open()
-		assert(TradeSession.setItems(session, A, { unit("a1") }, {}) == nil)
+		assert(
+			TradeSession.setItems(session, A, { unit("a1") }, {}) == nil,
+			"TradeSession setup must hold: TradeSession.setItems(session, A, { unit('a1') }, {}) == nil"
+		)
 		local revision, updateId = session.revision, session.updateId
 		t.expect(TradeSession.setItems(session, A, { unit("a1") }, {})).toBe(nil)
 		t.expect(session.revision).toBe(revision)
@@ -84,14 +102,20 @@ return function(t: TestRunner.TestContext): ()
 	t.test("both sides empty cannot be readied; one empty side is allowed", function()
 		local session = open()
 		t.expect((TradeSession.setReady(session, A, true, session.revision, 102))).toBe("BOTH_SIDES_EMPTY")
-		assert(TradeSession.setItems(session, A, { unit("a1") }, {}) == nil)
+		assert(
+			TradeSession.setItems(session, A, { unit("a1") }, {}) == nil,
+			"TradeSession setup must hold: TradeSession.setItems(session, A, { unit('a1') }, {}) == nil"
+		)
 		t.expect((TradeSession.setReady(session, B, true, session.revision, 102))).toBe(nil)
 		t.expect(session.status).toBe("Ready")
 	end)
 
 	t.test("stale revision ready is rejected without mutation", function()
 		local session = open()
-		assert(TradeSession.setItems(session, A, { unit("a1") }, {}) == nil)
+		assert(
+			TradeSession.setItems(session, A, { unit("a1") }, {}) == nil,
+			"TradeSession setup must hold: TradeSession.setItems(session, A, { unit('a1') }, {}) == nil"
+		)
 		local updateId = session.updateId
 		t.expect((TradeSession.setReady(session, A, true, session.revision - 1, 102))).toBe("STALE_REVISION")
 		t.expect(session.initiator.ready).toBe(false)
@@ -100,7 +124,10 @@ return function(t: TestRunner.TestContext): ()
 
 	t.test("simultaneous ready at the same revision are both valid and arm the countdown", function()
 		local session = open()
-		assert(TradeSession.setItems(session, A, { unit("a1") }, {}) == nil)
+		assert(
+			TradeSession.setItems(session, A, { unit("a1") }, {}) == nil,
+			"TradeSession setup must hold: TradeSession.setItems(session, A, { unit('a1') }, {}) == nil"
+		)
 		local revision = session.revision
 		t.expect(TradeSession.wouldArm(session, A)).toBe(false)
 		t.expect((TradeSession.setReady(session, A, true, revision, 102))).toBe(nil)
@@ -151,7 +178,7 @@ return function(t: TestRunner.TestContext): ()
 		local triggers = 0
 		for _ = 1, 20 do
 			local code, both = TradeSession.confirm(session, A, revision, after)
-			assert(code == nil)
+			assert(code == nil, "TradeSession setup must hold: code == nil")
 			if both then
 				triggers += 1
 			end

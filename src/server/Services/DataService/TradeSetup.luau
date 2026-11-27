@@ -21,7 +21,7 @@ export type Api = {
 	checkPair: (a: Trades.Party, b: Trades.Party) -> string?,
 	lock: (player: Player, lock: Trades.Lock) -> (),
 	unlock: (player: Player) -> (),
-	commit: (a: Trades.Party, b: Trades.Party) -> (string?, any?),
+	commit: (a: Trades.Party, b: Trades.Party, onResolved: ((code: string?) -> ())?) -> (string?, any?),
 	describeUnits: (player: Player, uids: { string }) -> { Trades.UnitBrief },
 	isUidLocked: (player: Player, uid: string) -> boolean,
 	goldReserve: (player: Player) -> number,

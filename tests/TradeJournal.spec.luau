@@ -170,7 +170,10 @@ return function(t: TestRunner.TestContext): ()
 
 	t.test("a second commit for the same offers fails without changes", function()
 		local w = world()
-		assert(w.journal.commit(w.parties()) == nil)
+		assert(
+			w.journal.commit(w.parties()) == nil,
+			"TradeJournal setup must hold: w.journal.commit(w.parties()) == nil"
+		)
 		w.drain()
 		local before = TableUtil.deepCopy(w.dataOf(w.playerA))
 		local code = w.journal.commit(w.parties())
@@ -183,11 +186,17 @@ return function(t: TestRunner.TestContext): ()
 		w.lockBoth()
 		w.store.down = true
 		local before = TableUtil.deepCopy(w.dataOf(w.playerA))
-		local code = w.journal.commit(w.parties())
+		local resolved: { any } = {}
+		local a, b = w.parties()
+		local code = w.journal.commit(a, b, function(late: string?)
+			table.insert(resolved, late or "OK")
+		end)
 		t.expect(code).toBe("TRADE_PENDING_RECOVERY")
 		t.expect(w.ledger.goldReserve(w.playerA)).toBe(Trade.taxGold) -- kunci tetap
+		t.expect(#resolved).toBe(0)
 		w.store.down = false
 		w.drain()
+		t.expect(table.concat(resolved, ",")).toBe("TRADE_LOG_UNAVAILABLE")
 		t.expect(w.ledger.goldReserve(w.playerA)).toBe(0)
 		t.expect(TableUtil.deepCopy(w.dataOf(w.playerA))).toEqual(before)
 	end)
@@ -207,13 +216,18 @@ return function(t: TestRunner.TestContext): ()
 		w.store.failAfterWrite["t/trade-1"] = Trade.log.retryAttempts
 		w.store.fail["t/trade-1"] = 0
 		-- Setiap percobaan menulis lalu error: hasil tidak diketahui walau backend sudah tertulis.
-		local code = w.journal.commit(w.parties())
+		local resolved: { any } = {}
+		local a, b = w.parties()
+		local code = w.journal.commit(a, b, function(late: string?)
+			table.insert(resolved, late or "OK")
+		end)
 		t.expect(code).toBe("TRADE_PENDING_RECOVERY")
 		t.expect(w.dataOf(w.playerA).units.ua ~= nil).toBe(true)
 		w.drain()
 		t.expect(w.dataOf(w.playerA).units.ub ~= nil).toBe(true)
 		t.expect(w.dataOf(w.playerB).units.ua ~= nil).toBe(true)
 		t.expect(w.ledger.goldReserve(w.playerB)).toBe(0)
+		t.expect(table.concat(resolved, ",")).toBe("OK")
 	end)
 
 	t.test("non-durable presave aborts with tombstone and no changes", function()
@@ -298,6 +312,39 @@ return function(t: TestRunner.TestContext): ()
 		t.expect(w.log.appendDaily(record)).toBe("LOG_SHARD_FULL")
 	end)
 
+	t.test("failed daily append keeps the journal and blocks the next trade until finish recovers", function()
+		local w = world()
+		local _, record = w.journal.commit(w.parties())
+		assert(record, "TradeJournal setup must hold: first commit succeeds")
+		local shardKey = `d/{record.day}/{TradeLog.shardOf(record.tradeId)}`
+		w.store.fail[shardKey] = 2 * Trade.log.retryAttempts * Trade.log.retryAttempts
+		w.drain()
+		-- Audit belum tercatat: indeks pending tetap, marker FIFO tidak boleh dianggap selesai.
+		t.expect(w.store.data["u/1"][record.tradeId] ~= nil).toBe(true)
+		t.expect(w.store.data[shardKey]).toBe(nil)
+		addUnit(w.dataOf(w.playerA), "ua2", "kael")
+		addUnit(w.dataOf(w.playerB), "ub2", "pip")
+		local a, b = w.parties()
+		a.offer.uids, b.offer.uids = { "ua2" }, { "ub2" }
+		local gold = w.dataOf(w.playerA).currencies.Gold
+		t.expect((w.journal.commit(a, b))).toBe("TRADE_RECOVERY_PENDING")
+		t.expect(w.dataOf(w.playerA).units.ua2 ~= nil).toBe(true)
+		t.expect(w.dataOf(w.playerA).currencies.Gold).toBe(gold)
+		-- Store pulih: muat ulang profil menjalankan finish lagi tanpa menerapkan ulang.
+		w.store.fail[shardKey] = 0
+		local ok, toFinish = w.journal.recover(1, w.sessions[w.playerA])
+		t.expect(ok).toBe(true)
+		t.expect(w.dataOf(w.playerA).currencies.Gold).toBe(gold)
+		t.expect(w.journal.finish(w.playerA, toFinish[1])).toBe(true)
+		t.expect(w.store.data[shardKey].count).toBe(1)
+		t.expect(next(w.store.data["u/1"])).toBe(nil)
+		-- Sisi B masih menahan jurnalnya sendiri sampai finish B selesai.
+		t.expect((w.journal.commit(a, b))).toBe("TRADE_RECOVERY_PENDING")
+		t.expect(w.journal.finish(w.playerB, record)).toBe(true)
+		t.expect(w.store.data[shardKey].count).toBe(1)
+		t.expect((w.journal.commit(a, b))).toBe(nil)
+	end)
+
 	t.test("pending index is bounded per user", function()
 		local w = world()
 		for index = 1, Trade.log.maxPendingPerUser do
@@ -333,7 +380,10 @@ return function(t: TestRunner.TestContext): ()
 		local w = world()
 		t.expect(#w.ledger.indexProfile(w.playerA, w.dataOf(w.playerA))).toBe(0)
 		t.expect(#w.ledger.indexProfile(w.playerB, w.dataOf(w.playerB))).toBe(0)
-		assert(w.journal.commit(w.parties()) == nil)
+		assert(
+			w.journal.commit(w.parties()) == nil,
+			"TradeJournal setup must hold: w.journal.commit(w.parties()) == nil"
+		)
 		local intruder = { UserId = 3, Name = "C" }
 		local copy = newProfile()
 		addUnit(copy, "ua", "kael") -- ua sekarang sah milik B

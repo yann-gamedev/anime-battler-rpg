@@ -46,7 +46,7 @@ return TableUtil.deepFreeze({
 	log = {
 		retryAttempts = 3,
 		retryBackoffSeconds = 1,
-		maxPendingPerUser = 4, -- jurnal belum selesai per pemain; penuh = trade baru ditolak
+		maxPendingPerUser = 1, -- satu jurnal belum selesai per pemain; trade baru ditolak sampai finish/pemulihan
 		dailyShards = 64, -- bucket harian deterministik per tradeId
 		maxEntriesPerShard = 1000, -- rekaman ≤ ~2 KB → jauh di bawah 4 MB per key
 		maxDupeFlagsPerDay = 500,

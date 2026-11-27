@@ -137,7 +137,15 @@ function Coordinator.create(deps: Deps): Coordinator
 				unlockBoth(session)
 			else
 				-- Jurnal DataService melepas kunci sendiri (kecuali keputusan belum diketahui).
-				code = trades.commit(party(session.initiator, playerA), party(session.target, playerB))
+				code = trades.commit(party(session.initiator, playerA), party(session.target, playerB), function(late)
+					-- Keputusan ambigu terselesaikan nanti: sesi tetap Confirmed sampai titik ini.
+					if TradeSession.finish(session, late) then
+						publish(session)
+					end
+				end)
+				if code == "TRADE_PENDING_RECOVERY" then
+					return
+				end
 			end
 			if TradeSession.finish(session, code) then
 				publish(session)

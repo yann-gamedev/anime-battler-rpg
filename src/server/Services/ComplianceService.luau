@@ -36,8 +36,8 @@ export type Cache = {
 local ComplianceService = {}
 
 -- Trade item berbayar (prompt 11): restricted = NOT IsPaidItemTradingAllowed. Bukan boolean → nil (fail-closed).
--- TODO(verify-api): halaman referensi PolicyService saat ini tidak mendaftar field hasil
--- GetPolicyInfoForPlayerAsync; nama field ini perlu dikonfirmasi di place uji. Field hilang = trade diblok.
+-- Field terdokumentasi: https://create.roblox.com/docs/production/monetization/paid-random-items#ispaiditemtradingallowed
+-- Perilaku Studio/akun uji tetap diverifikasi di place uji. Field hilang atau bukan boolean = trade diblok.
 function ComplianceService.readTradeRestricted(info: any): boolean?
 	if type(info) ~= "table" then
 		return nil

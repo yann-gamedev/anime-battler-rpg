@@ -44,7 +44,9 @@ export type Deps = {
 }
 export type Journal = {
 	isEnabled: () -> boolean,
-	commit: (a: Party, b: Party) -> (string?, TradeRecord?),
+	-- "TRADE_PENDING_RECOVERY" = keputusan belum diketahui; onResolved dipanggil SEKALI saat selesai:
+	-- nil (committed & diterapkan), kode gagal (aborted), atau "TRADE_PENDING_RECOVERY" (semua peserta keluar).
+	commit: (a: Party, b: Party, onResolved: ((code: string?) -> ())?) -> (string?, TradeRecord?),
 	recover: (userId: number, session: Trades.SessionLike) -> (boolean, { TradeRecord }),
 	finish: (player: Player, record: TradeRecord) -> boolean,
 }
@@ -146,38 +148,62 @@ function TradeJournal.create(deps: Deps): Journal
 			)
 			return false
 		end
+		-- Indeks pending baru dihapus setelah entri audit harian tercatat. Gagal (termasuk LOG_SHARD_FULL) =
+		-- indeks tetap, sehingga muat profil berikutnya mengulang finish (marker ada → tanpa terap ulang).
 		local code = log.appendDaily(record)
 		if code then
-			report(`[TradeJournal] log harian {record.tradeId}: {code}`)
+			report(`[TradeJournal] log harian {record.tradeId}: {code}; indeks pending dipertahankan`)
+			return false
 		end
 		return log.removePending(player.UserId, record.tradeId)
 	end
 
+	-- finish idempoten; diulang terbatas selama pemain online (sisanya diselesaikan saat profil dimuat).
 	local function startFinish(players: { Player }, record: TradeRecord): ()
 		for _, player in players do
 			deps.spawn(function()
-				finish(player, record)
+				for attempt = 1, LOG.retryAttempts do
+					if finish(player, record) or not deps.getSession(player) then
+						return
+					end
+					if attempt < LOG.retryAttempts then
+						deps.sleep(LOG.finishRetrySeconds)
+					end
+				end
 			end)
 		end
 	end
 
 	-- Keputusan tidak diketahui: item tetap dikunci. Coba lagi selama ada peserta online.
-	local function resolveLater(record: TradeRecord, a: Party, b: Party): ()
+	local function resolveLater(
+		record: TradeRecord,
+		a: Party,
+		b: Party,
+		failure: string,
+		onResolved: ((code: string?) -> ())?
+	): ()
+		local function notify(code: string?): ()
+			if onResolved then
+				onResolved(code)
+			end
+		end
 		deps.spawn(function()
 			while deps.getSession(a.player) or deps.getSession(b.player) do
 				deps.sleep(LOG.finishRetrySeconds)
 				local code = abort(record, a, b)
 				if code == nil then
-					return
+					return notify(failure)
 				elseif code == "COMMITTED" then
 					startFinish({ a.player, b.player }, record)
-					return
+					return notify(nil)
 				end
 			end
+			-- Semua peserta keluar: kunci ikut hilang bersama sesi; pemulihan saat muat yang menyelesaikan.
+			notify("TRADE_PENDING_RECOVERY")
 		end)
 	end
 
-	local function commit(a: Party, b: Party): (string?, TradeRecord?)
+	local function commit(a: Party, b: Party, onResolved: ((code: string?) -> ())?): (string?, TradeRecord?)
 		local log = deps.log
 		if not log then
 			unlockAll(a, b)
@@ -208,7 +234,7 @@ function TradeJournal.create(deps: Deps): Journal
 		if failure then
 			local aborted = abort(record, a, b)
 			if aborted == "UNKNOWN" then
-				resolveLater(record, a, b)
+				resolveLater(record, a, b, failure, onResolved)
 				return "TRADE_PENDING_RECOVERY", nil
 			end
 			if aborted == "COMMITTED" then
@@ -221,7 +247,7 @@ function TradeJournal.create(deps: Deps): Journal
 		end
 		local state, stored = log.decide(record)
 		if state == nil then
-			resolveLater(record, a, b)
+			resolveLater(record, a, b, "TRADE_ABORTED", onResolved)
 			return "TRADE_PENDING_RECOVERY", nil
 		elseif state == "aborted" or not stored or stored.tradeId ~= tradeId then
 			log.removePending(a.userId, tradeId)
