@@ -285,6 +285,22 @@ Setelah Story 1-3, `LobbyService` membuka pajangan dan `RaidService` membuka Bos
 
 `AnalyticsService` mengirim funnel onboarding, perubahan mata uang beserta saldo akhir, dan event summon, pembelian, klaim quest, raid, serta durasi sesi ke Roblox Analytics. Untuk uji penerimaan, publikasikan build ke place pengujian privat, jalankan alur onboarding dan satu siklus quest/raid, lalu periksa kategori Funnel, Economy, dan Custom di Creator Dashboard.
 
+### Trade (M6)
+
+`TradeService` menyimpan semua state sesi di server (`TradeService/TradeSession.luau`, murni). Remote: `RequestTrade(targetUserId)`, `RespondTrade(sessionId, accept)`, `SetTradeItems(sessionId, unitUids, skinIds)`, `SetReady(sessionId, ready, expectedRevision)`, `ConfirmTrade(sessionId, expectedRevision)`, `CancelTrade(sessionId)`. Semuanya mengembalikan `{ ok, code, data = TradeView }` (`src/shared/TradeTypes.luau`). Event `TradeUpdated` mengirim `TradeView` yang sama hanya ke kedua peserta. UID unit lawan tidak pernah dikirim. `revision` mengikat persetujuan dan hanya naik saat isi berubah atau countdown baru dimulai. `updateId` naik pada setiap mutasi. Konfirmasi baru diterima setelah `countdownEndsAt` (`Workspace:GetServerTimeNow()`). Angka trade ada di `Config/Trade.luau`.
+
+Gerbang server: trade aktif untuk lingkungan ini, kedua pemain di server yang sama, avatar hidup di dalam `Workspace.ArcanumLobby.TradingPlaza` dan berdekatan, level akun, `Player.AccountAge`, batas harian UTC, kebijakan `IsPaidItemTradingAllowed` yang bernilai `true` untuk kedua pemain (fail-closed), serta kelayakan, kepemilikan, kapasitas, dan Gold pajak. Saat countdown dimulai, DataService mengunci item, Gold pajak, dan kapasitas penerima. Guard di `Commit.run` dan mutasi langsung menolak perubahan atas item tersebut (`ITEM_IN_TRADE`).
+
+Data trade hanya diubah DataService (`DataService.trades`). `DataService/TradeJournal.luau` menjalankan prepare (indeks `u/<userId>`), presave (bukti `LastSavedData`), cek ulang, keputusan satu kunci `t/<tradeId>` lewat `UpdateAsync`, swap dua profil tanpa yield, lalu finish (marker tersimpan, hapus indeks, append `d/<hari>/<shard>`). Saat profil dimuat, tradeId di indeks diselesaikan. Kunci kosong ditulis `aborted`, sedangkan keputusan `committed` di-roll-forward sekali lewat marker `trade.applied`. Jika indeks tidak bisa dibaca, profil tidak dimuat. UID ganda di sesi aktif ditandai di `trade.dupeFlags` dan `f/<hari>` tanpa dihapus. Store: `TradeLog_Studio` di Studio, `TradeLog` di live. Field profil `trade` bersifat additive dan direkonsiliasi tanpa migrasi.
+
+Uji di Studio (place pengujian dengan API Services aktif):
+
+1. Jalankan `studio/world/build_lobby.luau`. Masukkan UserId penguji, termasuk `-1` dan `-2` untuk Players lokal, ke `Constants.ADMIN_USER_IDS` di checkout lokal.
+2. Mulai **Test → Clients and Servers** dengan 2 client. Dari **Server** Command Bar, untuk tiap pemain: naikkan `accountLevel` lewat progres story atau profil uji ke ≥ 15, lalu jalankan `TradeService.adminSetAccountAge(player, 7)`. Jika kebijakan Studio tidak mengembalikan `IsPaidItemTradingAllowed`, jalankan `ComplianceService.adminForceTradeAllowed(player, true)`. Sediakan ≥ 500 Gold.
+3. Bawa kedua avatar ke Trading Plaza. Kirim permintaan, terima, isi tawaran (unit 1★ dan skin), lalu Ready. Cek countdown 5 detik dan perubahan isi yang ditolak (`TRADE_LOCKED`). Confirm dari kedua sisi, lalu cek unit (UID sama, level 1, tanpa trait), refund, pajak, dan `tradeDaily`.
+4. Ulangi dengan unit 2★, locked, Mythic baru, dan sisi kosong (harus muncul peringatan UI). Coba keluar saat countdown, spam Confirm, dan tunggu 3 menit sampai sesi expired.
+5. Stop → Play. Pastikan hasil trade tersimpan dan indeks `u/<userId>` di `TradeLog_Studio` kosong.
+
 ## 7. Studio build scripts (`studio/`)
 
 - Dipakai untuk membangun **hierarki instance** (layout UI, lobby placeholder) sekali jalan.

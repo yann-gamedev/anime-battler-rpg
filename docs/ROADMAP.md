@@ -41,6 +41,7 @@ Kerjakan berurutan. Setiap task punya prompt di `prompts/`. Centang `[x]` hanya 
 
 ## M6 — Trade
 - [ ] `TradeService`, Trading Plaza, UI trade → `prompts/11-trade.md`
+  - Backend: state machine, gerbang server, jurnal `TradeLog`, pemulihan, dan tes mock lokal lulus. Trade live dimatikan (D-034) sampai uji 2 client dan durabilitas DataStore di place uji Studio selesai.
 - [ ] Review keamanan trade + uji dupe manual
 
 ## M7 — Asrama & Perang Wilayah
